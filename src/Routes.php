@@ -285,13 +285,15 @@ class Routes
         }
     }
 
-    public function error($handler = null) {
+    public function error($handler = null)
+    {
         if (isset($handler) && is_callable($handler)) {
             $this->errorHandlers[] = $handler;
         }
     }
 
-    private function onError($message) {
+    private function onError($message)
+    {
         if (isset($this->errorHandlers)) {
             foreach ($this->errorHandlers as $handler) {
                 $handler($message);
