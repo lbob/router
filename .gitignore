@@ -1,0 +1,10 @@
+# Created by .gitignore support plugin (hsz.mobi)
+# Composer
+composer.lock
+vendor/
+
+# Test
+test.php
+
+# IDE
+.idea/
