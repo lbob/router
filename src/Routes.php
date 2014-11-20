@@ -5,7 +5,24 @@ namespace Nebula;
 
 /**
  * Class Router
- *
+ * 路由配置示例：
+ * $routes->mappings['default'] = array(
+ *     'expression' => '/{controller}?/{action}?/{id}?',
+ *     'handler' => array(
+ *         'matched' => 'TestController@index',
+ *         'before'  => function ($params, $route) {
+ *             echo 'default2 before.';
+ *         },
+ *         'after'   => function ($params) {
+ *             echo 'default2 after.';
+ *         }
+ *     ),
+ *     'pattern' => array(
+ *         'controller' => '',
+ *         'action' => '',
+ *         'id' => '',
+ *     ),
+ * );
  * @package Nebula
  * @author lbob created at 2014/11/19 19:52
  */
@@ -20,6 +37,7 @@ class Routes
     const PATTERN_HANDLER_DECLARE = '#([a-zA-z][a-zA-Z0-9\_]*)\@([a-z][a-z0-9\_]*)#i';
 
     public $mappings = array();
+    public $loaded = false;
 
     private $tokenDefaultPatterns
         = array(
@@ -37,7 +55,7 @@ class Routes
     private $baseMappings
         = array(
             'default' => array(
-                '/{controller}/{action}/{id}',
+                'expression' => '/{controller}?/{action}?/{id}?',
             ),
         );
     private $isMatched = false;
@@ -48,6 +66,11 @@ class Routes
     private $missingHandlers = array();
     private $errorHandlers = array();
 
+    private $source;
+    private $timestamp = -1;
+
+    private static $instances = array();
+
     public function __construct()
     {
         foreach ($this->baseMappings as $key => $item) {
@@ -55,17 +78,39 @@ class Routes
         }
     }
 
+    public static function getInstance($config = null) {
+        if (!isset($instances[$config])) {
+            self::$instances[$config] = self::loadConfig($config);
+        }
+        return self::$instances[$config];
+    }
+
+    protected static function loadConfig($config, Routes $routes = null) {
+        if (!isset($routes)) {
+            $class = get_called_class();
+            $routes = new $class();
+        }
+        if (!$routes->loaded) {
+            $routes->loaded = true;
+            if (is_file($config) && is_readable($config)) {
+                $routes->source = $config;
+                $routes->timestamp = filemtime($config);
+                require $config;
+            }
+        }
+        return $routes;
+    }
+
     public function compileRoutes()
     {
         $results = array();
         if (isset($this->mappings) && !empty($this->mappings)) {
             foreach ($this->mappings as $key => $item) {
-                $expression = $item[0];
+                $expression = $item['expression'];
                 if (!isset($expression) || empty($expression)) {
                     $this->onError("Expression error [$key]");
                     return;
                 }
-                $paramsLen = count($item);
 
                 //Router 表达式预处理
                 $expression = str_replace('/', '\/', $expression);
@@ -73,8 +118,8 @@ class Routes
 
                 //表达式 和 Pattern 处理
                 $patterns = array();
-                if ($paramsLen > 2) {
-                    $patterns = $item[2];
+                if (isset($item['pattern'])) {
+                    $patterns = $item['pattern'];
                 }
 
                 //装载 Token 匹配模式
@@ -108,8 +153,8 @@ class Routes
                 $results[$key] = $expression;
 
                 //Handlers 处理
-                if ($paramsLen > 1) {
-                    $thirdParam = $item[1];
+                if (isset($item['handler'])) {
+                    $thirdParam = $item['handler'];
                     if (isset($thirdParam) && is_array($thirdParam)) {
                         if (array_key_exists('matched', $thirdParam)) {
                             $this->mappingMatchedHandlers[$key] = $thirdParam['matched'];
