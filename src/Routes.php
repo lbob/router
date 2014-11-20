@@ -69,6 +69,8 @@ class Routes
     private $source;
     private $timestamp = -1;
 
+    private $defaultMappingMatchedHandlers = array();
+
     private static $instances = array();
 
     public function __construct()
@@ -198,6 +200,10 @@ class Routes
             if (array_key_exists($this->matchedMappingsName, $this->mappingMatchedHandlers)) {
                 $matchedHandler = $this->mappingMatchedHandlers[$this->matchedMappingsName];
                 $this->invoke('Matched', $matchedHandler, $params);
+            } else {
+                foreach ($this->defaultMappingMatchedHandlers as $handler) {
+                    $this->invoke('Matched', $handler, $params);
+                }
             }
 
             if ($this->isAbort()) {
@@ -242,6 +248,7 @@ class Routes
                         return;
                     }
 
+                    //如果构造函数带有形参，则此方法行不通。
                     $object = new $className();
                     call_user_func_array(array($object, $methodName), array($params, $this));
                 } else {
@@ -346,5 +353,11 @@ class Routes
             }
         }
         $this->isAbort = true;
+    }
+
+    public function registerMatchedHandler($handler) {
+        if (isset($handler)) {
+            $this->defaultMappingMatchedHandlers[] = $handler;
+        }
     }
 }
