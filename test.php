@@ -15,4 +15,7 @@ defined('CONF_DIR') || define('CONF_DIR', SCRIPT_DIR . '/config', true);
 
 
 $routes = Routes::getInstance(CONF_DIR.'/routes.php');
+$routes->registerMatchedHandler(function($params, $routes) {
+    var_dump($params);
+});
 $routes->routing('/airline/show/aa333?ddd=ss&dee=ggg&pp=测试来啦sdfsdf33234');

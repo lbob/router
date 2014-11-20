@@ -15,7 +15,6 @@ $routes->mappings['home'] = array(
 $routes->mappings['test'] = array(
     'expression' => '/{controller}/{action}?/{name}?',
     'handler' => array(
-        'matched' => 'TestController@index',
         'before'  => function ($params, $route) {
             echo 'test before.';
         },
