@@ -37,7 +37,7 @@ class Routes
     private $baseMappings
         = array(
             'default' => array(
-                '{controller}/{action}/{id}',
+                '/{controller}/{action}/{id}',
             ),
         );
     private $isMatched = false;
