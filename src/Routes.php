@@ -242,7 +242,8 @@ class Routes
                         return;
                     }
 
-                    call_user_func_array(array($className, $methodName), array($params, $this));
+                    $object = new $className();
+                    call_user_func_array(array($object, $methodName), array($params, $this));
                 } else {
                     $this->onError("Router [" . $this->matchedMappingsName . "] can't find handler [$flag]");
                     return;

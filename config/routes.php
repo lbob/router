@@ -4,13 +4,14 @@
  */
 
 $routes->mappings['home'] = array(
-    '/',
-    array(
+    'expression' => '/',
+    'handler' => array(
         'matched' => function() {
             echo 'Home!';
         }
     )
 );
+
 $routes->mappings['test'] = array(
     'expression' => '/{controller}/{action}?/{name}?',
     'handler' => array(
