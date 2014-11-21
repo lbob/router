@@ -24,6 +24,15 @@ $routes->mappings['test'] = array(
     ),
 );
 
+$routes->mappings['api'] = array(
+    'expression' => '/api',
+    'handler' => array(
+        'matched' => function() {
+            echo 'API!';
+        }
+    )
+);
+
 
 $routes->missing(function() { echo '<p>Routing missed;</p>'; });
 $routes->error(function($message) { echo "<p>$message</p>"; });

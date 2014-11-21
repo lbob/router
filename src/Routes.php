@@ -271,10 +271,10 @@ class Routes
     {
         $params = array();
         foreach ($this->expressions as $key => $item) {
-            if (array_key_exists($key, $this->mappingNamespaces)) {
-                $params['namespace'] = $this->mappingNamespaces[$key];
-            }
             if (preg_match('#' . $item . '#i', $str, $matches)) {
+                if (array_key_exists($key, $this->mappingNamespaces)) {
+                    $params['namespace'] = $this->mappingNamespaces[$key];
+                }
                 foreach ($this->mappingTokens[$key] as $tokenKey) {
                     if ($tokenKey === 'tail') {
                         if (!empty($matches['tail'])) {
@@ -287,6 +287,7 @@ class Routes
                     }
                 }
                 $this->setMatched($key);
+                break;
             }
         }
         return $params;
