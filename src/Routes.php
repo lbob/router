@@ -77,9 +77,7 @@ class Routes
 
     public function __construct()
     {
-        foreach ($this->baseMappings as $key => $item) {
-            $this->mappings[$key] = $item;
-        }
+
     }
 
     public static function getInstance($config = null) {
@@ -108,6 +106,11 @@ class Routes
     public function compileRoutes()
     {
         $results = array();
+        if (isset($this->baseMappings) && !empty($this->baseMappings)) {
+            foreach ($this->baseMappings as $key => $item) {
+                $this->mappings[$key] = $item;
+            }
+        }
         if (isset($this->mappings) && !empty($this->mappings)) {
             foreach ($this->mappings as $key => $item) {
                 $expression = $item['expression'];
