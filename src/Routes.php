@@ -35,6 +35,7 @@ class Routes
     const PATTERN_TOKEN = '#\{([^\{\}]+)\}#i';
     const PATTERN_TOKEN_LESS = '#(\\/)(\{[^\{\}]+\}\?)#i';
     const PATTERN_HANDLER_DECLARE = '#([a-zA-z][a-zA-Z0-9\_]*)\@([a-z][a-z0-9\_]*)#i';
+    const PATTERN_NAMESPACE = '#^\/?([^\{\}]+[a-zA-Z0-9])#i';
 
     public $mappings = array();
     public $loaded = false;
@@ -52,6 +53,7 @@ class Routes
     private $mappingAfterHandlers = array();
     private $expressions = array();
     private $mappingTokens = array();
+    private $mappingNamespaces = array();
     private $baseMappings
         = array(
             'default' => array(
@@ -112,6 +114,12 @@ class Routes
                 if (!isset($expression) || empty($expression)) {
                     $this->onError("Expression error [$key]");
                     return;
+                }
+
+                //解析Namespace
+                if (preg_match(self::PATTERN_NAMESPACE, $expression, $matches)) {
+                    if (!empty($matches[1]))
+                        $this->mappingNamespaces[$key] = $matches[1];
                 }
 
                 //Router 表达式预处理
@@ -263,6 +271,9 @@ class Routes
     {
         $params = array();
         foreach ($this->expressions as $key => $item) {
+            if (array_key_exists($key, $this->mappingNamespaces)) {
+                $params['namespace'] = $this->mappingNamespaces[$key];
+            }
             if (preg_match('#' . $item . '#i', $str, $matches)) {
                 foreach ($this->mappingTokens[$key] as $tokenKey) {
                     if ($tokenKey === 'tail') {

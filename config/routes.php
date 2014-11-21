@@ -13,7 +13,7 @@ $routes->mappings['home'] = array(
 );
 
 $routes->mappings['test'] = array(
-    'expression' => '/{controller}/{action}?/{name}?',
+    'expression' => '/uav/admin/{controller}/{action}?/{name}?',
     'handler' => array(
         'before'  => function ($params, $route) {
             echo 'test before.';

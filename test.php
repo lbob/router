@@ -18,4 +18,5 @@ $routes = Routes::getInstance(CONF_DIR.'/routes.php');
 $routes->registerMatchedHandler(function($params, $routes) {
     var_dump($params);
 });
-$routes->routing('/airline/show/aa333?ddd=ss&dee=ggg&pp=测试来啦sdfsdf33234');
+$routes->routing('/uav/admin/airline/show/aa333?ddd=ss&dee=ggg&pp=测试来啦sdfsdf33234');
+var_dump($_SERVER['REQUEST_URI']);
