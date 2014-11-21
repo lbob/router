@@ -70,8 +70,10 @@ class Routes
 
     private $source;
     private $timestamp = -1;
-
     private $defaultMappingMatchedHandlers = array();
+    private $filterHandlers = array();
+    private $filterBinders = array();
+    private $mappingFilterBinders = array();
 
     private static $instances = array();
 
@@ -80,22 +82,24 @@ class Routes
 
     }
 
-    public static function getInstance($config = null) {
+    public static function getInstance($config = null)
+    {
         if (!isset($instances[$config])) {
             self::$instances[$config] = self::loadConfig($config);
         }
         return self::$instances[$config];
     }
 
-    protected static function loadConfig($config, Routes $routes = null) {
+    protected static function loadConfig($config, Routes $routes = null)
+    {
         if (!isset($routes)) {
-            $class = get_called_class();
+            $class  = get_called_class();
             $routes = new $class();
         }
         if (!$routes->loaded) {
             $routes->loaded = true;
             if (is_file($config) && is_readable($config)) {
-                $routes->source = $config;
+                $routes->source    = $config;
                 $routes->timestamp = filemtime($config);
                 require $config;
             }
@@ -115,8 +119,7 @@ class Routes
             foreach ($this->mappings as $key => $item) {
                 $expression = $item['expression'];
                 if (!isset($expression) || empty($expression)) {
-                    $this->onError("Expression error [$key]");
-                    return;
+                    throw new \InvalidArgumentException("Expression error [$key]");
                 }
 
                 //解析Namespace
@@ -170,13 +173,13 @@ class Routes
                     $thirdParam = $item['handler'];
                     if (isset($thirdParam) && is_array($thirdParam)) {
                         if (array_key_exists('matched', $thirdParam)) {
-                            $this->mappingMatchedHandlers[$key] = $thirdParam['matched'];
+                            $this->mappingMatchedHandlers[$key][] = $thirdParam['matched'];
                         }
                         if (array_key_exists('before', $thirdParam)) {
-                            $this->mappingBeforeHandlers[$key] = $thirdParam['before'];
+                            $this->mappingBeforeHandlers[$key][] = $thirdParam['before'];
                         }
                         if (array_key_exists('after', $thirdParam)) {
-                            $this->mappingAfterHandlers[$key] = $thirdParam['after'];
+                            $this->mappingAfterHandlers[$key][] = $thirdParam['after'];
                         }
                     }
                 }
@@ -193,13 +196,17 @@ class Routes
             $str = $_SERVER['REQUEST_URI'];
         }
 
+        var_dump($this->filterBinders);
+
         $this->compileRoutes();
         $params = $this->parseStr($str);
         if ($this->isMatched()) {
+            $this->matchFilter($params);
+
             //处理 Before 事件
             if (array_key_exists($this->matchedMappingsName, $this->mappingBeforeHandlers)) {
-                $beforeHandler = $this->mappingBeforeHandlers[$this->matchedMappingsName];
-                $this->invoke('Before', $beforeHandler, $params);
+                $beforeHandlers = $this->mappingBeforeHandlers[$this->matchedMappingsName];
+                $this->invoke('Before', $beforeHandlers, $params);
             }
 
             if ($this->isAbort()) {
@@ -209,12 +216,10 @@ class Routes
 
             //处理 Matched 事件
             if (array_key_exists($this->matchedMappingsName, $this->mappingMatchedHandlers)) {
-                $matchedHandler = $this->mappingMatchedHandlers[$this->matchedMappingsName];
-                $this->invoke('Matched', $matchedHandler, $params);
+                $matchedHandlers = $this->mappingMatchedHandlers[$this->matchedMappingsName];
+                $this->invoke('Matched', $matchedHandlers, $params);
             } else {
-                foreach ($this->defaultMappingMatchedHandlers as $handler) {
-                    $this->invoke('Matched', $handler, $params);
-                }
+                $this->invoke('Matched', $this->defaultMappingMatchedHandlers, $params);
             }
 
             if ($this->isAbort()) {
@@ -224,47 +229,49 @@ class Routes
 
             //处理 After 事件
             if (array_key_exists($this->matchedMappingsName, $this->mappingAfterHandlers)) {
-                $afterHandler = $this->mappingAfterHandlers[$this->matchedMappingsName];
-                $this->invoke('After', $afterHandler, $params);
+                $afterHandlers = $this->mappingAfterHandlers[$this->matchedMappingsName];
+                $this->invoke('After', $afterHandlers, $params);
             }
         } else {
             $this->onMissing();
         }
     }
 
-    private function invoke($flag, $handler, $params)
+    private function invoke($flag, $handlers, $params)
     {
-        if (isset($handler)) {
-            if (is_callable($handler)) {
-                $handler($params, $this);
-            } else if (is_string($handler)) {
-                if (preg_match(self::PATTERN_HANDLER_DECLARE, $handler, $matches)) {
-                    if (!empty($matches[1])) {
-                        $className = $matches[1];
-                    }
-                    if (!empty($matches[2])) {
-                        $methodName = $matches[2];
-                    }
+        if (isset($handlers) && !empty($handlers)) {
+            foreach ($handlers as $handler) {
+                if (is_callable($handler)) {
+                    $handler($params, $this);
+                } else if (is_string($handler)) {
+                    if (preg_match(self::PATTERN_HANDLER_DECLARE, $handler, $matches)) {
+                        if (!empty($matches[1])) {
+                            $className = $matches[1];
+                        }
+                        if (!empty($matches[2])) {
+                            $methodName = $matches[2];
+                        }
 
-                    if (!isset($className) || !isset($methodName)) {
+                        if (!isset($className) || !isset($methodName)) {
+                            $this->onError("Router [" . $this->matchedMappingsName . "] can't find handler [$flag]");
+                            return;
+                        }
+                        if (!class_exists($className)) {
+                            $this->onError("Router [" . $this->matchedMappingsName . "] 's handler [$flag] can't find class [$className]");
+                            return;
+                        }
+                        if (!method_exists($className, $methodName)) {
+                            $this->onError("Router [" . $this->matchedMappingsName . "] 's handler [$flag] can't find method [$methodName] in class [$className]");
+                            return;
+                        }
+
+                        //如果构造函数带有形参，则此方法行不通。
+                        $object = new $className();
+                        call_user_func_array(array($object, $methodName), array($params, $this));
+                    } else {
                         $this->onError("Router [" . $this->matchedMappingsName . "] can't find handler [$flag]");
                         return;
                     }
-                    if (!class_exists($className)) {
-                        $this->onError("Router [" . $this->matchedMappingsName . "] 's handler [$flag] can't find class [$className]");
-                        return;
-                    }
-                    if (!method_exists($className, $methodName)) {
-                        $this->onError("Router [" . $this->matchedMappingsName . "] 's handler [$flag] can't find method [$methodName] in class [$className]");
-                        return;
-                    }
-
-                    //如果构造函数带有形参，则此方法行不通。
-                    $object = new $className();
-                    call_user_func_array(array($object, $methodName), array($params, $this));
-                } else {
-                    $this->onError("Router [" . $this->matchedMappingsName . "] can't find handler [$flag]");
-                    return;
                 }
             }
         }
@@ -370,9 +377,90 @@ class Routes
         $this->isAbort = true;
     }
 
-    public function registerMatchedHandler($handler) {
+    public function registerMatchedHandler($handler)
+    {
         if (isset($handler)) {
             $this->defaultMappingMatchedHandlers[] = $handler;
+        }
+    }
+
+    public function registerFilter($key, $callback)
+    {
+        if (isset($key) && isset($callback)) {
+            $this->filterHandlers[$key] = $callback;
+        }
+    }
+
+    public function bindFilter()
+    {
+        $paramsLen = func_num_args();
+        if ($paramsLen > 0)
+            $pattern = func_get_arg(0);
+        if (!isset($pattern)) {
+            throw new \InvalidArgumentException('Filter pattern invalid.');
+        }
+        if ($paramsLen > 1)
+            $handler = func_get_arg(1);
+        if (!isset($handler)) {
+            throw new \InvalidArgumentException('Filter handler invalid.');
+        }
+        if (is_array($pattern)) {
+            $filterKey = '';
+            foreach ($pattern as $key => $value) {
+                $realValue = $value;
+                if ($realValue === '*') {
+                    $realValue = '[^\]]+';
+                }
+                $filterKey = $filterKey . '\[' . $key . '=' . $realValue . '\]';
+            }
+            $this->filterBinders[$filterKey] = $handler;
+        } else {
+            $this->mappingFilterBinders[$pattern] = $handler;
+        }
+    }
+
+    private function matchFilter($params)
+    {
+        if ($this->isMatched()) {
+            $handlers = array();
+            if (isset($params) && !empty($params)) {
+                $filterKey = '';
+                foreach ($params as $key => $value) {
+                    $filterKey = $filterKey . '[' . $key . '=' . $value . ']';
+                    //var_dump($filterKey);
+                }
+                if (isset($filterKey)) {
+                    foreach ($this->filterBinders as $filterBinderPattern => $filterBinderValue) {
+                        var_dump($filterKey);
+                        if (preg_match('#'.str_replace('/', '\/', $filterBinderPattern).'#i', $filterKey, $matches)) {
+                            $handlers = $this->filterBinders[$filterBinderPattern];
+                            break;
+                        }
+                    }
+                }
+                if (array_key_exists($this->matchedMappingsName, $this->mappingFilterBinders))
+                    $handlers = $this->mappingFilterBinders[$this->matchedMappingsName];
+            }
+            var_dump($handlers);
+            if (isset($handlers) && !empty($handlers)) {
+                foreach ($handlers as $key => $value) {
+                    //取得Filter的Handler
+                    if (isset($value)) {
+                        $filterNames    = explode('|', $value);
+                        foreach ($filterNames as $filterName) {
+                            if (array_key_exists($filterName, $this->filterHandlers)) {
+                                $filterHandler = $this->filterHandlers[$filterName];
+                                if ($key === 'before')
+                                    $this->mappingBeforeHandlers[$this->matchedMappingsName][] = $filterHandler;
+                                if ($key === 'matched')
+                                    $this->mappingMatchedHandlers[$this->matchedMappingsName][] = $filterHandler;
+                                if ($key === 'after')
+                                    $this->mappingAfterHandlers[$this->matchedMappingsName][] = $filterHandler;
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }

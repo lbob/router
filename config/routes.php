@@ -16,10 +16,10 @@ $routes->mappings['test'] = array(
     'expression' => '/uav/admin/{controller}/{action}?/{name}?',
     'handler' => array(
         'before'  => function ($params, $route) {
-            echo 'test before.';
+            var_dump('test before.');
         },
         'after'   => function ($params) {
-            echo 'test after.';
+            var_dump('test after.');
         }
     ),
 );
@@ -36,3 +36,23 @@ $routes->mappings['api'] = array(
 
 $routes->missing(function() { echo '<p>Routing missed;</p>'; });
 $routes->error(function($message) { echo "<p>$message</p>"; });
+
+
+$routes->bindFilter(array(
+    'namespace' => 'uav/admin',
+    'controller' => 'airline',
+    'action' => '*',
+), array('before' => 'auth|uavAuth'));
+
+$routes->bindFilter('api', array('before' => 'auth|uavAuth'));
+
+
+$routes->registerFilter('auth', function() {
+    var_dump('auth');
+    var_dump(func_get_arg(0));
+});
+
+$routes->registerFilter('uavAuth', function() {
+    var_dump('uavAuth');
+    var_dump(func_get_arg(0));
+});
