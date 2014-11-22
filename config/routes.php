@@ -42,7 +42,7 @@ $routes->bindFilter(array(
     'namespace' => 'uav/admin',
     'controller' => 'airline',
     'action' => '*',
-), array('before' => 'auth|uavAuth'));
+), array('before' => 'auth'));
 
 $routes->bindFilter('api', array('before' => 'auth|uavAuth'));
 

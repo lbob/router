@@ -242,7 +242,11 @@ class Routes
         if (isset($handlers) && !empty($handlers)) {
             foreach ($handlers as $handler) {
                 if (is_callable($handler)) {
-                    $handler($params, $this);
+                    if ($handler($params, $this) === false) {
+                        var_dump('eeee');
+                        $this->abort(); //返回值为 false 则中止事件栈
+                        return;
+                    }
                 } else if (is_string($handler)) {
                     if (preg_match(self::PATTERN_HANDLER_DECLARE, $handler, $matches)) {
                         if (!empty($matches[1])) {
@@ -267,7 +271,10 @@ class Routes
 
                         //如果构造函数带有形参，则此方法行不通。
                         $object = new $className();
-                        call_user_func_array(array($object, $methodName), array($params, $this));
+                        if (call_user_func_array(array($object, $methodName), array($params, $this)) === false) {
+                            $this->abort();
+                            return;
+                        }
                     } else {
                         $this->onError("Router [" . $this->matchedMappingsName . "] can't find handler [$flag]");
                         return;
