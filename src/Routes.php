@@ -74,30 +74,36 @@ class Routes
     private $filterHandlers = array();
     private $filterBinders = array();
     private $mappingFilterBinders = array();
+    private $filterDir;
+    private $filterDirCache = array();
 
-    private static $instances = array();
+    /**
+     * @var $instance Routes
+     */
+    private static $instance;
 
     public function __construct()
     {
 
     }
 
-    public static function getInstance($config = null)
+    public static function getInstance($config = null, $filterDir = null)
     {
-        if (!isset($instances[$config])) {
-            self::$instances[$config] = self::loadConfig($config);
+        if (!isset(self::$instance)) {
+            self::$instance = self::loadConfig($config, $filterDir);
         }
-        return self::$instances[$config];
+        return self::$instance;
     }
 
-    protected static function loadConfig($config, Routes $routes = null)
+    protected static function loadConfig($config, $filterDir = null, Routes $routes = null)
     {
         if (!isset($routes)) {
             $class  = get_called_class();
             $routes = new $class();
         }
         if (!$routes->loaded) {
-            $routes->loaded = true;
+            $routes->loaded    = true;
+            $routes->filterDir = $filterDir;
             if (is_file($config) && is_readable($config)) {
                 $routes->source    = $config;
                 $routes->timestamp = filemtime($config);
@@ -195,8 +201,6 @@ class Routes
         } else {
             $str = $_SERVER['REQUEST_URI'];
         }
-
-        var_dump($this->filterBinders);
 
         $this->compileRoutes();
         $params = $this->parseStr($str);
@@ -390,8 +394,14 @@ class Routes
         }
     }
 
-    public function registerFilter($key, $callback)
+    public static function registerFilter($key, $callback)
     {
+        if (isset($key) && isset($callback)) {
+            self::$instance->filterHandlers[$key] = $callback;
+        }
+    }
+
+    public function filter($key, $callback) {
         if (isset($key) && isset($callback)) {
             $this->filterHandlers[$key] = $callback;
         }
@@ -436,8 +446,7 @@ class Routes
                 }
                 if (isset($filterKey)) {
                     foreach ($this->filterBinders as $filterBinderPattern => $filterBinderValue) {
-                        var_dump($filterKey);
-                        if (preg_match('#'.str_replace('/', '\/', $filterBinderPattern).'#i', $filterKey, $matches)) {
+                        if (preg_match('#' . str_replace('/', '\/', $filterBinderPattern) . '#i', $filterKey, $matches)) {
                             $handlers = $this->filterBinders[$filterBinderPattern];
                             break;
                         }
@@ -450,8 +459,11 @@ class Routes
                 foreach ($handlers as $key => $value) {
                     //取得Filter的Handler
                     if (isset($value)) {
-                        $filterNames    = explode('|', $value);
+                        $filterNames = explode('|', $value);
                         foreach ($filterNames as $filterName) {
+                            if (!array_key_exists($filterName, $this->filterHandlers)) {
+                                $this->loadFilterConfig($filterName);
+                            }
                             if (array_key_exists($filterName, $this->filterHandlers)) {
                                 $filterHandler = $this->filterHandlers[$filterName];
                                 if ($key === 'before')
@@ -466,6 +478,22 @@ class Routes
                     }
                 }
             }
+        }
+    }
+
+    private function loadFilterConfig($filterName)
+    {
+        // 尝试载入同名的 filter 定义文件
+        if (array_key_exists($filterName, $this->filterDirCache)) {
+            $filterPath = $this->filterDirCache[$filterName];
+        } else {
+            $filterPath = $this->filterDir . DIRECTORY_SEPARATOR . $filterName . '.php';
+        }
+        if (is_file($filterPath) && is_readable($filterPath)) {
+            $this->filterDirCache[$filterName] = $filterPath;
+            require_once $filterPath;
+        } else {
+            $this->onError("Can't find filter [$filterName].");
         }
     }
 }

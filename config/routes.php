@@ -15,9 +15,6 @@ $routes->mappings['home'] = array(
 $routes->mappings['test'] = array(
     'expression' => '/uav/admin/{controller}/{action}?/{name}?',
     'handler' => array(
-        'matched' => function ($params, $route) {
-            var_dump('matched');
-        },
         'before'  => function ($params, $route) {
             var_dump('test before.');
         },
@@ -36,11 +33,6 @@ $routes->mappings['api'] = array(
     )
 );
 
-
-$routes->missing(function() { echo '<p>Routing missed;</p>'; });
-$routes->error(function($message) { echo "<p>$message</p>"; });
-
-
 $routes->bindFilter(array(
     'namespace' => 'uav/admin',
     'controller' => 'airline',
@@ -50,12 +42,16 @@ $routes->bindFilter(array(
 $routes->bindFilter('api', array('before' => 'auth|uavAuth'));
 
 
-$routes->registerFilter('auth', function() {
-    var_dump('auth');
-    var_dump(func_get_arg(0));
-});
 
-$routes->registerFilter('uavAuth', function() {
-    var_dump('uavAuth');
-    var_dump(func_get_arg(0));
-});
+//$routes->filter('auth', function() {
+//    var_dump('auth');
+//    var_dump(func_get_arg(0));
+//    $params = func_get_arg(0);
+//    if (array_key_exists('url', $params) && isset($params['url'])) {
+//        header('location:http://'.$params['url']);
+//    }
+//});
+
+
+$routes->missing(function() { echo '<p>Routing missed;</p>'; });
+$routes->error(function($message) { echo "<p>$message</p>"; });
