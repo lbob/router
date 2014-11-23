@@ -8,3 +8,5 @@ test.php
 
 # IDE
 .idea/*
+
+config/
