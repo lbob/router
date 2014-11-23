@@ -452,9 +452,9 @@ class Routes
                         }
                     }
                 }
-                if (array_key_exists($this->matchedMappingsName, $this->mappingFilterBinders))
-                    $handlers = $this->mappingFilterBinders[$this->matchedMappingsName];
             }
+            if (array_key_exists($this->matchedMappingsName, $this->mappingFilterBinders))
+                $handlers = $this->mappingFilterBinders[$this->matchedMappingsName];
             if (isset($handlers) && !empty($handlers)) {
                 foreach ($handlers as $key => $value) {
                     //取得Filter的Handler
