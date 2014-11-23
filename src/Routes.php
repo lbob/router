@@ -243,7 +243,6 @@ class Routes
             foreach ($handlers as $handler) {
                 if (is_callable($handler)) {
                     if ($handler($params, $this) === false) {
-                        var_dump('eeee');
                         $this->abort(); //返回值为 false 则中止事件栈
                         return;
                     }
@@ -434,7 +433,6 @@ class Routes
                 $filterKey = '';
                 foreach ($params as $key => $value) {
                     $filterKey = $filterKey . '[' . $key . '=' . $value . ']';
-                    //var_dump($filterKey);
                 }
                 if (isset($filterKey)) {
                     foreach ($this->filterBinders as $filterBinderPattern => $filterBinderValue) {
@@ -448,7 +446,6 @@ class Routes
                 if (array_key_exists($this->matchedMappingsName, $this->mappingFilterBinders))
                     $handlers = $this->mappingFilterBinders[$this->matchedMappingsName];
             }
-            var_dump($handlers);
             if (isset($handlers) && !empty($handlers)) {
                 foreach ($handlers as $key => $value) {
                     //取得Filter的Handler
@@ -459,8 +456,9 @@ class Routes
                                 $filterHandler = $this->filterHandlers[$filterName];
                                 if ($key === 'before')
                                     $this->mappingBeforeHandlers[$this->matchedMappingsName][] = $filterHandler;
-                                if ($key === 'matched')
-                                    $this->mappingMatchedHandlers[$this->matchedMappingsName][] = $filterHandler;
+                                // Filter 不支持 Matched 事件
+//                                if ($key === 'matched')
+//                                    $this->mappingMatchedHandlers[$this->matchedMappingsName][] = $filterHandler;
                                 if ($key === 'after')
                                     $this->mappingAfterHandlers[$this->matchedMappingsName][] = $filterHandler;
                             }

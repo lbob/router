@@ -15,6 +15,9 @@ $routes->mappings['home'] = array(
 $routes->mappings['test'] = array(
     'expression' => '/uav/admin/{controller}/{action}?/{name}?',
     'handler' => array(
+        'matched' => function ($params, $route) {
+            var_dump('matched');
+        },
         'before'  => function ($params, $route) {
             var_dump('test before.');
         },
@@ -42,7 +45,7 @@ $routes->bindFilter(array(
     'namespace' => 'uav/admin',
     'controller' => 'airline',
     'action' => '*',
-), array('before' => 'auth'));
+), array('before' => 'auth|uavAuth'));
 
 $routes->bindFilter('api', array('before' => 'auth|uavAuth'));
 
