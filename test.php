@@ -4,6 +4,7 @@
  * User: lbob
  * Date: 2014/11/19
  * Time: 19:57
+ * @var $routes Nebula\Routes;
  */
 require 'vendor/autoload.php';
 
@@ -15,7 +16,7 @@ defined('CONF_DIR') || define('CONF_DIR', SCRIPT_DIR . '/config', true);
 defined('CONF_FILTER_DIR') || define('CONF_FILTER_DIR', CONF_DIR . '/filter', true);
 
 
-$routes = Routes::getInstance(CONF_DIR.'/routes.php', CONF_FILTER_DIR);
+$routes = Routes::instance(CONF_DIR.'/routes.php', CONF_FILTER_DIR);
 $routes->registerMatchedHandler(function($params, $routes) {
     var_dump($params);
 });

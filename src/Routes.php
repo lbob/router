@@ -67,6 +67,7 @@ class Routes
     private $abortingHandlers = array();
     private $missingHandlers = array();
     private $errorHandlers = array();
+    private $matchedHandlers = array();
 
     private $source;
     private $timestamp = -1;
@@ -87,15 +88,15 @@ class Routes
 
     }
 
-    public static function getInstance($config = null, $filterDir = null)
+    public static function instance($config = null, $filterDir = null)
     {
         if (!isset(self::$instance)) {
-            self::$instance = self::loadConfig($config, $filterDir);
+            self::$instance = self::config($config, $filterDir);
         }
         return self::$instance;
     }
 
-    protected static function loadConfig($config, $filterDir = null, Routes $routes = null)
+    protected static function config($config, $filterDir = null, Routes $routes = null)
     {
         if (!isset($routes)) {
             $class  = get_called_class();
@@ -205,6 +206,7 @@ class Routes
         $this->compileRoutes();
         $params = $this->parseStr($str);
         if ($this->isMatched()) {
+            $this->onMatched($params);
             $this->matchFilter($params);
 
             //处理 Before 事件
@@ -352,6 +354,12 @@ class Routes
         }
     }
 
+    public function matched($handler = null) {
+        if (isset($handler) && is_callable($handler)) {
+            $this->matchedHandlers[] = $handler;
+        }
+    }
+
     private function onAborting()
     {
         if (isset($this->abortingHandlers)) {
@@ -365,6 +373,15 @@ class Routes
     {
         if (isset($this->missingHandlers)) {
             foreach ($this->missingHandlers as $handler) {
+                $handler();
+            }
+        }
+    }
+
+    private function onMatched()
+    {
+        if (isset($this->matchedHandlers)) {
+            foreach ($this->matchedHandlers as $handler) {
                 $handler();
             }
         }
@@ -401,7 +418,8 @@ class Routes
         }
     }
 
-    public function filter($key, $callback) {
+    public function filter($key, $callback)
+    {
         if (isset($key) && isset($callback)) {
             $this->filterHandlers[$key] = $callback;
         }
@@ -462,7 +480,7 @@ class Routes
                         $filterNames = explode('|', $value);
                         foreach ($filterNames as $filterName) {
                             if (!array_key_exists($filterName, $this->filterHandlers)) {
-                                $this->loadFilterConfig($filterName);
+                                $this->filterConfig($filterName);
                             }
                             if (array_key_exists($filterName, $this->filterHandlers)) {
                                 $filterHandler = $this->filterHandlers[$filterName];
@@ -481,7 +499,7 @@ class Routes
         }
     }
 
-    private function loadFilterConfig($filterName)
+    private function filterConfig($filterName)
     {
         // 尝试载入同名的 filter 定义文件
         if (array_key_exists($filterName, $this->filterDirCache)) {
