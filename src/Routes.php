@@ -38,6 +38,16 @@ class Routes
     const PATTERN_NAMESPACE = '#^\/?([^\{\}]+[a-zA-Z0-9])#i';
 
     public $mappings = array();
+    public $baseMappings
+        = array(
+            'default' => array(
+                'expression' => '/{controller}?/{action}?/{id}?',
+                'default' => array(
+                    'controller' => 'home',
+                    'action' => 'index'
+                )
+            ),
+        );
     public $loaded = false;
 
     private $tokenDefaultPatterns
@@ -55,16 +65,6 @@ class Routes
     private $mappingTokens = array();
     private $mappingNamespaces = array();
     private $mappingTokenDefaultValues = array();
-    private $baseMappings
-        = array(
-            'default' => array(
-                'expression' => '/{controller}?/{action}?/{id}?',
-                'default' => array(
-                    'controller' => 'home',
-                    'action' => 'index'
-                )
-            ),
-        );
     private $isMatched = false;
     private $matchedMappingsName = '';
     private $isAbort = false;
