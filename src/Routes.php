@@ -59,10 +59,6 @@ class Routes
         = array(
             'default' => array(
                 'expression' => '/{controller}?/{action}?/{id}?',
-                'default' => array(
-                    'controller' => 'home',
-                    'action' => 'index'
-                )
             ),
         );
     private $isMatched = false;
