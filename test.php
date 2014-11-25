@@ -20,5 +20,5 @@ $routes = Routes::instance(CONF_DIR.'/routes.php', CONF_FILTER_DIR);
 $routes->registerMatchedHandler(function($params, $routes) {
     var_dump($params);
 });
-$routes->routing('/uav/admin/airline/show/aa333?ddd=ss&dee=ggg&pp=测试_来啦sdfsdf33234');
+$routes->routing('/');
 var_dump($_SERVER['REQUEST_URI']);
