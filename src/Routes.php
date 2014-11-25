@@ -206,9 +206,9 @@ class Routes
                 }
                 // 加载默认的 Token Default Values
                 if (isset($this->defaultTokenValues) && !empty($this->defaultTokenValues)) {
-                    foreach ($this->defaultTokenValues as $defaulTokenValueKey => $defaulTokenValueValue) {
-                        if (!array_key_exists($defaulTokenValueKey, $this->mappingTokenDefaultValues)) {
-                            $this->mappingTokenDefaultValues[$defaulTokenValueKey] = $defaulTokenValueValue;
+                    foreach ($this->defaultTokenValues as $defaultTokenValueKey => $defaultTokenValueValue) {
+                        if (!array_key_exists($defaultTokenValueKey, $this->mappingTokenDefaultValues)) {
+                            $this->mappingTokenDefaultValues[$defaultTokenValueKey] = $defaultTokenValueValue;
                         }
                     }
                 }
