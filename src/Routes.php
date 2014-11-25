@@ -377,7 +377,8 @@ class Routes
         }
     }
 
-    public function matched($handler = null) {
+    public function matched($handler = null)
+    {
         if (isset($handler) && is_callable($handler)) {
             $this->matchedHandlers[] = $handler;
         }
