@@ -206,7 +206,7 @@ class Routes
         $this->compileRoutes();
         $params = $this->parseStr($str);
         if ($this->isMatched()) {
-            $this->onMatched($params);
+            $this->onMatched($params, $this);
             $this->matchFilter($params);
 
             //处理 Before 事件
@@ -378,11 +378,11 @@ class Routes
         }
     }
 
-    private function onMatched()
+    private function onMatched($param, $routes = null)
     {
         if (isset($this->matchedHandlers)) {
             foreach ($this->matchedHandlers as $handler) {
-                $handler();
+                $handler($param, $routes);
             }
         }
     }
