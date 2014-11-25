@@ -54,10 +54,15 @@ class Routes
     private $expressions = array();
     private $mappingTokens = array();
     private $mappingNamespaces = array();
+    private $mappingTokenDefaultValues = array();
     private $baseMappings
         = array(
             'default' => array(
                 'expression' => '/{controller}?/{action}?/{id}?',
+                'default' => array(
+                    'controller' => 'home',
+                    'action' => 'index'
+                )
             ),
         );
     private $isMatched = false;
@@ -178,7 +183,7 @@ class Routes
                 //Handlers 处理
                 if (isset($item['handler'])) {
                     $thirdParam = $item['handler'];
-                    if (isset($thirdParam) && is_array($thirdParam)) {
+                    if (is_array($thirdParam)) {
                         if (array_key_exists('matched', $thirdParam)) {
                             $this->mappingMatchedHandlers[$key][] = $thirdParam['matched'];
                         }
@@ -188,6 +193,14 @@ class Routes
                         if (array_key_exists('after', $thirdParam)) {
                             $this->mappingAfterHandlers[$key][] = $thirdParam['after'];
                         }
+                    }
+                }
+
+                // Token Default Values 处理
+                if (isset($item['default'])) {
+                    $defaultTokenValues = $item['default'];
+                    if (is_array($defaultTokenValues)) {
+                        $this->mappingTokenDefaultValues[$key] = $defaultTokenValues;
                     }
                 }
             }
@@ -206,6 +219,7 @@ class Routes
         $this->compileRoutes();
         $params = $this->parseStr($str);
         if ($this->isMatched()) {
+            $this->loadTokenDefaultValues($params);
             $this->onMatched($params, $this);
             $this->matchFilter($params);
 
@@ -313,6 +327,19 @@ class Routes
             }
         }
         return $params;
+    }
+
+    private function loadTokenDefaultValues(&$params)
+    {
+        if ($this->isMatched() && isset($this->mappingTokenDefaultValues) && !empty($this->mappingTokenDefaultValues)) {
+            if (array_key_exists($this->matchedMappingsName, $this->mappingTokenDefaultValues)) {
+                foreach ($this->mappingTokenDefaultValues[$this->matchedMappingsName] as $key => $value) {
+                    if (!array_key_exists($key, $params)) {
+                        $params[$key] = $value;
+                    }
+                }
+            }
+        }
     }
 
     private function setMatched($mappingName)
