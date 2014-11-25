@@ -39,7 +39,6 @@ class Routes
 
     public $mappings = array();
     public $loaded = false;
-    public $defaultTokenValues = array();
 
     private $tokenDefaultPatterns
         = array(
@@ -202,14 +201,6 @@ class Routes
                     $defaultTokenValues = $item['default'];
                     if (is_array($defaultTokenValues)) {
                         $this->mappingTokenDefaultValues[$key] = $defaultTokenValues;
-                    }
-                }
-                // 加载默认的 Token Default Values
-                if (isset($this->defaultTokenValues) && !empty($this->defaultTokenValues)) {
-                    foreach ($this->defaultTokenValues as $defaultTokenValueKey => $defaultTokenValueValue) {
-                        if (!array_key_exists($defaultTokenValueKey, $this->mappingTokenDefaultValues)) {
-                            $this->mappingTokenDefaultValues[$defaultTokenValueKey] = $defaultTokenValueValue;
-                        }
                     }
                 }
             }
