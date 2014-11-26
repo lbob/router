@@ -22,22 +22,23 @@ $routes->registerMatchedHandler(function($params, $routes) {
 });
 
 $routes->mappings['test'] = array(
-    'expression' => '/admin/uav/{controller}/{action}?/{name}?',
+    'expression' => '/admin/{controller}?/{action}?/{id}?',
     'default' => array(
+        'controller' => 'home',
         'action' => 'index'
     )
 );
 
-$routes->routing('/admin/uav/home/shit/?name=ddd&ddd=sss');
-var_dump($_SERVER['REQUEST_URI']);
+$routes->routing('/admin/home/shit/?name=ddd&ddd=sss');
+//var_dump($_SERVER['REQUEST_URI']);
 
-var_dump($routes->reverse('/post/uav/sdfsd', array(
+echo '1::'.($routes->reverse('/admin/ddd', array(
     'id' => 12,
-)));
+))).'<br/>';
 
-var_dump($routes->reverseByRoute('test', array(
+echo '2::'.($routes->reverseByRoute('test', array(
     'controller' => 'home',
     'action' => 'home',
     'name' => 'ddd',
     'ddd' => 'sss'
-)));
+))).'<br/>';

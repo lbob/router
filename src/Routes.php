@@ -218,7 +218,9 @@ class Routes
         }
 
         $this->compileRoutes();
-        $params = $this->parseStr($str);
+        list($params, $isMatched, $matchedKey) = $this->parseStr($str);
+        if ($isMatched)
+            $this->setMatched($matchedKey);
         if ($this->isMatched()) {
             $this->loadTokenDefaultValues($params);
             $this->onMatched($params, $this);
@@ -306,6 +308,8 @@ class Routes
 
     private function parseStr($str)
     {
+        $isMatched = false;
+        $matchedKey = null;
         $params = array();
         foreach ($this->expressions as $key => $item) {
             if (preg_match('#' . $item . '#i', $str, $matches)) {
@@ -323,24 +327,27 @@ class Routes
                             $params[$tokenKey] = $matches[$tokenKey];
                     }
                 }
-                $this->setMatched($key);
+                //$this->setMatched($key);
+                $isMatched = true;
+                $matchedKey = $key;
                 break;
             }
         }
-        return $params;
+        return array($params, $isMatched, $matchedKey);
     }
 
     public function reverse($url, $params)
     {
-        $routeResult = $this->parseStr($url);
+        list($routeResult, $isMatched, $matchedKey) = $this->parseStr($url);
 
-        if ($this->isMatched()) {
+        if ($isMatched) {
+            var_dump($matchedKey);
             foreach ($routeResult as $key => $value) {
                 if (!array_key_exists($key, $params)) {
                     $params[$key] = $value;
                 }
             }
-            return $this->reverseByRoute($this->matchedMappingsName, $params);
+            return $this->reverseByRoute($matchedKey, $params);
         }
     }
 
