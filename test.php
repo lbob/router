@@ -20,5 +20,17 @@ $routes = Routes::instance(CONF_DIR.'/routes.php', CONF_FILTER_DIR);
 $routes->registerMatchedHandler(function($params, $routes) {
     var_dump($params);
 });
-$routes->routing('/home/');
+
+$routes->mappings['test'] = array(
+    'expression' => '/admin/uav/{controller}/{action}?/{name}?'
+);
+
+$routes->routing('/admin/uav/home/shit/?name=ddd&ddd=sss');
 var_dump($_SERVER['REQUEST_URI']);
+
+$result = $routes->reverse('/admin/uav/home/shit', array(
+    'name' => 'ddd',
+    'ddd' => 'sss'
+));
+
+var_dump($result);

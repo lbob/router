@@ -34,6 +34,7 @@ class Routes
     const PATTERN_TAIL = '.+';
     const PATTERN_TOKEN = '#\{([^\{\}]+)\}#i';
     const PATTERN_TOKEN_LESS = '#(\\/)(\{[^\{\}]+\}\?)#i';
+    const PATTERN_TOKEN_COMPLETE = '#\{([^\{\}]+)\}\??#i';
     const PATTERN_HANDLER_DECLARE = '#([a-zA-z][a-zA-Z0-9\_]*)\@([a-z][a-z0-9\_]*)#i';
     const PATTERN_NAMESPACE = '#^\/?([^\{\}]+[a-zA-Z0-9])#i';
 
@@ -299,7 +300,7 @@ class Routes
         }
     }
 
-    public function parseStr($str)
+    private function parseStr($str)
     {
         $params = array();
         foreach ($this->expressions as $key => $item) {
@@ -323,6 +324,48 @@ class Routes
             }
         }
         return $params;
+    }
+
+    public function reverse($url, $params)
+    {
+        $routeResult = $this->parseStr($url);
+
+        if ($this->isMatched()) {
+            var_dump($this->matchedMappingsName);
+            $expression = $this->mappings[$this->matchedMappingsName]['expression'];
+            foreach ($routeResult as $key => $value) {
+                if (!array_key_exists($key, $params)) {
+                    $params[$key] = $value;
+                }
+            }
+            $replaced = array();
+            if (preg_match_all(self::PATTERN_TOKEN_COMPLETE, $expression, $matches, PREG_SET_ORDER)) {
+                foreach ($matches as $item) {
+                    $matchedString = $item[0];
+                    $matchedToken = $item[1];
+                    if (array_key_exists($matchedToken, $params))
+                        $expression = str_replace($matchedString, $params[$matchedToken], $expression);
+                    else {
+                        if (strpos($matchedString, '?') > 0) {
+                            $expression = str_replace($matchedString, '', $expression);
+                        } else {
+                            throw new \InvalidArgumentException("Reverse fail: Can't find [$matchedToken] in [$expression] (Matched route name is [$this->matchedMappingsName])");
+                        }
+                    }
+                    $replaced[$matchedToken] = $matchedToken;
+                }
+                $expression = str_replace('//', '/', $expression);
+            }
+            if (array_key_exists('namespace', $params))
+                unset($params['namespace']);
+            $tails = array();
+            foreach ($params as $key => $value) {
+                if (!array_key_exists($key, $replaced)) {
+                    $tails[] = $key.'='.$value;
+                }
+            }
+            return $expression.'?'.implode('&', $tails);
+        }
     }
 
     private function loadTokenDefaultValues(&$params)
