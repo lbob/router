@@ -31,9 +31,8 @@ $routes->mappings['test'] = array(
 $routes->routing('/admin/uav/home/shit/?name=ddd&ddd=sss');
 var_dump($_SERVER['REQUEST_URI']);
 
-var_dump($routes->reverse('/admin/uav/home/shit', array(
-    'name' => 'ddd',
-    'ddd' => 'sss'
+var_dump($routes->reverse('/post/uav/sdfsd', array(
+    'id' => 12,
 )));
 
 var_dump($routes->reverseByRoute('test', array(

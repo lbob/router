@@ -379,7 +379,9 @@ class Routes
                 $tails[] = $key.'='.$value;
             }
         }
-        return $expression.'?'.implode('&', $tails);
+        if (isset($tails) && !empty($tails))
+            $expression = $expression.'?'.implode('&', $tails);
+        return $expression;
     }
 
     private function loadTokenDefaultValues(&$params)
