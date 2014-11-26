@@ -222,7 +222,7 @@ class Routes
         if ($isMatched)
             $this->setMatched($matchedKey);
         if ($this->isMatched()) {
-            $this->loadTokenDefaultValues($params);
+            $this->loadTokenDefaultValues($matchedKey, $params);
             $this->onMatched($params, $this);
             $this->matchFilter($params);
 
@@ -325,6 +325,8 @@ class Routes
                     } else {
                         if (!empty($matches[$tokenKey]))
                             $params[$tokenKey] = $matches[$tokenKey];
+                        else
+                            $params[$tokenKey] = null;
                     }
                 }
                 //$this->setMatched($key);
@@ -341,7 +343,6 @@ class Routes
         list($routeResult, $isMatched, $matchedKey) = $this->parseStr($url);
 
         if ($isMatched) {
-            var_dump($matchedKey);
             foreach ($routeResult as $key => $value) {
                 if (!array_key_exists($key, $params)) {
                     $params[$key] = $value;
@@ -353,6 +354,7 @@ class Routes
 
     public function reverseByRoute($routeName, $params)
     {
+        $this->loadTokenDefaultValues($routeName, $params);
         $expression = $this->mappings[$routeName]['expression'];
         $replaced = array();
         if (preg_match_all(self::PATTERN_TOKEN_COMPLETE, $expression, $matches, PREG_SET_ORDER)) {
@@ -362,6 +364,12 @@ class Routes
                 if (array_key_exists($matchedToken, $params))
                     $expression = str_replace($matchedString, $params[$matchedToken], $expression);
                 else {
+                    if (strpos($matchedString, '?') > 0) {
+                        $expression = str_replace($matchedString, '', $expression);
+                    } else {
+                        throw new \InvalidArgumentException("Reverse fail: Can't find [$matchedToken] in [$expression] (Matched route name is [$this->matchedMappingsName])");
+                    }
+                    /*
                     if (array_key_exists($routeName, $this->mappingTokenDefaultValues) &&
                         array_key_exists($matchedToken, $this->mappingTokenDefaultValues[$routeName])) {
                         $expression = str_replace($matchedString,
@@ -373,6 +381,7 @@ class Routes
                             throw new \InvalidArgumentException("Reverse fail: Can't find [$matchedToken] in [$expression] (Matched route name is [$this->matchedMappingsName])");
                         }
                     }
+                    */
                 }
                 $replaced[$matchedToken] = $matchedToken;
             }
@@ -391,17 +400,22 @@ class Routes
         return $expression;
     }
 
-    private function loadTokenDefaultValues(&$params)
+    private function loadTokenDefaultValues($matchedMappingName, &$params)
     {
-        if ($this->isMatched() && isset($this->mappingTokenDefaultValues) && !empty($this->mappingTokenDefaultValues)) {
-            if (array_key_exists($this->matchedMappingsName, $this->mappingTokenDefaultValues)) {
-                foreach ($this->mappingTokenDefaultValues[$this->matchedMappingsName] as $key => $value) {
-                    if (!array_key_exists($key, $params)) {
+        if (isset($this->mappingTokenDefaultValues) && !empty($this->mappingTokenDefaultValues)) {
+            if (array_key_exists($matchedMappingName, $this->mappingTokenDefaultValues)) {
+                foreach ($this->mappingTokenDefaultValues[$matchedMappingName] as $key => $value) {
+                    if (!array_key_exists($key, $params) || empty($params[$key])) {
                         $params[$key] = $value;
                     }
                 }
             }
         }
+        foreach ($params as $key => $value) {
+            if (!isset($value) || empty($value))
+                unset($params[$key]);
+        }
+
     }
 
     private function setMatched($mappingName)

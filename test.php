@@ -29,7 +29,7 @@ $routes->mappings['test'] = array(
     )
 );
 
-$routes->routing('/admin/home/shit/?name=ddd&ddd=sss');
+$routes->routing('/admin/home/32');
 //var_dump($_SERVER['REQUEST_URI']);
 
 echo '1::'.($routes->reverse('/admin/ddd', array(
@@ -38,7 +38,9 @@ echo '1::'.($routes->reverse('/admin/ddd', array(
 
 echo '2::'.($routes->reverseByRoute('test', array(
     'controller' => 'home',
-    'action' => 'home',
+    'action' => 'sdfdsf',
     'name' => 'ddd',
     'ddd' => 'sss'
 ))).'<br/>';
+
+//var_dump($routes);
