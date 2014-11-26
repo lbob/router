@@ -299,7 +299,7 @@ class Routes
         }
     }
 
-    private function parseStr($str)
+    public function parseStr($str)
     {
         $params = array();
         foreach ($this->expressions as $key => $item) {
