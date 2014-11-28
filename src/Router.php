@@ -1,5 +1,4 @@
 <?php namespace Nebula;
-use Prophecy\Exception\InvalidArgumentException;
 
 /**
  * Class Routes
@@ -43,7 +42,7 @@ class Router
         );
 
     /**
-     * @var array 编译 mappings 之后得到的路由表
+     * @var array Nebula\Route 编译 mappings 之后得到的路由表
      *
      * 包括以下字段：
      * expression: 原表达式解释成用于匹配URL的正则表达式
@@ -67,9 +66,33 @@ class Router
             'tail'       => self::PATTERN_TAIL,
         );
 
-    private $isMatched = false;
+    /**
+     * @var \Nebula\RouteResult
+     */
+    public $routeResult;
 
-    private $matchedMappingName;
+    /**
+     * @var array Nebula\Filter
+     */
+    private $filters;
+
+    private $isAbort = false;
+
+    /**
+     * @var string
+     */
+    private $filterDir;
+
+    private static $instance;
+
+    private $timestamp = -1;
+
+    private $source;
+
+    /**
+     * @var \Nebula\RouteCache
+     */
+    private $routeCache;
 
     public function __construct()
     {
@@ -80,31 +103,80 @@ class Router
                 }
             }
         }
+        $this->routeCache = new RouteCache();
+    }
+
+    public static function getInstance($configDir, $filterDir)
+    {
+        if (!isset(self::$instance)) {
+            self::$instance = self::make($configDir, $filterDir);
+        }
+        return self::$instance;
+    }
+
+    private static function make($configDir, $filterDir)
+    {
+        if (!isset($router)) {
+            $router = new Router();
+        }
+        if (isset($configDir)) {
+            if (is_file($configDir) && is_readable($configDir)) {
+                $router->timestamp = filemtime($configDir);
+                $router->source    = $configDir;
+                require $configDir;
+            }
+        }
+        if (isset($filterDir)) {
+            $router->filterDir = $filterDir;
+        }
+        return $router;
+    }
+
+    private function getBaseRouteData($mappingName, $mapping)
+    {
+        if (!$this->routeCache->isCacheExpired($this->timestamp)) {
+            $data = $this->routeCache->getData($mappingName);
+            if (isset($data)) return $data;
+        }
+
+        if (array_key_exists('expression', $mapping)) {
+            $expression = $mapping['expression'];
+            $tokens     = $this->getTokens($expression);
+            $patterns   = $this->getTokenPatterns($mappingName, $tokens);
+
+            //namespace
+            $namespace = null;
+            if (preg_match(self::PATTERN_NAMESPACE, $expression, $matches)) {
+                if (!empty($matches[1])) $namespace = $matches[1];
+            }
+
+            $result = array(
+                $this->parseExpression($expression, $tokens, $patterns),
+                $patterns,
+                $tokens,
+                $namespace
+            );
+            $this->routeCache->setData($mappingName, $result);
+            return $result;
+        }
+        return null;
     }
 
     public function compileRoutes()
     {
         unset($this->routes);
         $this->routes = array();
+        $this->routeCache->readCache();
         foreach ($this->mappings as $mappingName => $mapping) {
             $route              = new Route();
             $route->mappingName = $mappingName;
 
             //expression, patterns, tokens 能缓存的也就是这些数据了
-            if (array_key_exists('expression', $mapping)) {
-                $expression = $mapping['expression'];
-                $tokens     = $this->getTokens($expression);
-                $patterns   = $this->getTokenPatterns($mappingName, $tokens);
-
-                //namespace
-                if (preg_match(self::PATTERN_NAMESPACE, $expression, $matches)) {
-                    if (!empty($matches[1])) $route->namespace = $matches[1];
-                }
-
-                $route->expression = $this->parseExpression($expression, $tokens, $patterns);
-                $route->patterns   = $patterns;
-                $route->tokens     = $tokens;
-            }
+            list($expression, $patterns, $tokens, $namespace) = $this->getBaseRouteData($mappingName, $mapping);
+            $route->namespace  = $namespace;
+            $route->expression = $expression;
+            $route->patterns   = $patterns;
+            $route->tokens     = $tokens;
 
             //handler
             if (array_key_exists('handler', $mapping)) {
@@ -135,6 +207,22 @@ class Router
 
             $this->routes[$mappingName] = $route;
         }
+        $this->routeCache->writeCache();
+    }
+
+    public function registerIsCacheExpiredHandler($handler)
+    {
+        $this->routeCache->registerIsExpiredHandler($handler);
+    }
+
+    public function registerReadCacheHandler($handler)
+    {
+        $this->routeCache->registerReadCacheHandler($handler);
+    }
+
+    public function registerWriteCacheHandler($handler)
+    {
+        $this->routeCache->registerWriteCacheHandler($handler);
     }
 
     public function routing()
@@ -145,32 +233,95 @@ class Router
             $url = $_SERVER['REQUEST_URI'];
 
         $this->compileRoutes();
-        list($isMatched, $mappingName, $params) = $this->match($url);
-        if ($isMatched === true) {
-            $this->isMatched          = true;
-            $this->matchedMappingName = $mappingName;
+        $this->routeResult = $this->match($url);
+        if ($this->routeResult->isMatched === true) {
+            /**
+             * @var $route \Nebula\Route
+             */
+            $route = $this->routes[$this->routeResult->mappingName];
 
             //beforeFilters
+            $this->invokeFilters($route->beforeFilters);
+            if ($this->isAbort()) return;
 
             //beforeHandlers
+            $this->invokeHandlers($route->beforeHandlers);
+            if ($this->isAbort()) return;
 
             //matchedHandlers
+            $this->invokeHandlers($route->matchedHandlers);
+            if ($this->isAbort()) return;
 
             //afterFilters
+            $this->invokeFilters($route->afterFilters);
+            if ($this->isAbort()) return;
 
             //afterHandlers
+            $this->invokeHandlers($route->afterHandlers);
+            if ($this->isAbort()) return;
         }
-        var_dump(array($isMatched, $mappingName, $params));
     }
 
     public function isMatched()
     {
-        return $this->isMatched;
+        return $this->routeResult->isMatched;
+    }
+
+    public function registerFilter($name, $handler)
+    {
+        if (isset($name) && isset($handler)) {
+            $this->filters[$name] = new Filter($name, $this->getFilterPath($name), $handler);
+        }
     }
 
     public function getRoutes()
     {
         return $this->routes;
+    }
+
+    private function getFilterPath($filter)
+    {
+        return $this->filterDir . DIRECTORY_SEPARATOR . $filter . '.php';
+    }
+
+    private function invokeHandlers($handlers)
+    {
+        if (isset($handlers)) {
+            foreach ($handlers as $handler) {
+                if (is_callable($handler)) {
+                    if ($handler($this->routeResult->params) === false) {
+                        $this->abort();
+                        return;
+                    }
+                }
+            }
+        }
+    }
+
+    private function invokeFilters($filters)
+    {
+        if (isset($filters)) {
+            foreach ($filters as $filter) {
+                $handlers = array();
+                if (is_callable($filter)) {
+                    $handlers[] = $filter;
+                }
+                if (is_string($filter)) {
+                    if (!array_key_exists($filter, $this->filters)) {
+                        $path = $this->getFilterPath($filter);
+                        if (is_file($path) && is_readable($path))
+                            require $path;
+                        if (!array_key_exists($filter, $this->filters)) {
+                            throw new \InvalidArgumentException("Can't find filter [$filter] in route [" . $this->routeResult->mappingName . "]");
+                        }
+                    } else {
+                        $handlers = $this->filters[$filter]->handlers;
+                    }
+                }
+                $this->invokeHandlers($handlers);
+                if ($this->isAbort()) return;
+            }
+        }
     }
 
     private function match($url)
@@ -189,10 +340,11 @@ class Router
                         if (!empty($match[$token]))
                             $params[$token] = $match[$token];
                     }
-                    return array(true, $route->mappingName, $params);
+                    return new RouteResult($url, $route->mappingName, true, $params);
                 }
             }
         }
+        return null;
     }
 
     private function parseExpression($expression, $tokens, $patterns)
@@ -235,10 +387,20 @@ class Router
             if (array_key_exists($token, $allPatterns)) {
                 $patterns[$token] = $allPatterns[$token];
             } else {
-                throw new InvalidArgumentException("Missing token pattern [$token] in mapping [$mappingName].");
+                throw new \InvalidArgumentException("Missing token pattern [$token] in mapping [$mappingName].");
             }
         }
         return $patterns;
+    }
+
+    private function abort()
+    {
+        $this->isAbort = true;
+    }
+
+    private function isAbort()
+    {
+        return $this->isAbort;
     }
 }
  
