@@ -10,7 +10,7 @@ namespace Nebula;
  * @author lbob created at 2014/11/28 11:01
  */
 class RouteCache {
-    public $data = array();
+    public $routes = array();
 
     public $expired = true;
 
@@ -41,16 +41,16 @@ class RouteCache {
 
     public function setData($key, $value)
     {
-        $this->data[$key] = $value;
+        $this->routes[$key] = $value;
 
         $this->isMustWriteCache = true;
     }
 
     public function getData($key)
     {
-        if (isset($this->data) && array_key_exists($key, $this->data)) {
+        if (isset($this->routes) && array_key_exists($key, $this->routes)) {
             $this->stat[$key] = true;
-            return $this->data[$key];
+            return $this->routes[$key];
         }
         return null;
     }
@@ -73,7 +73,7 @@ class RouteCache {
     public function writeCache()
     {
         if ($this->isMustWriteCache && isset($this->writeCacheHandler) &&  is_callable($this->writeCacheHandler))
-            call_user_func($this->writeCacheHandler, $this->data);
+            call_user_func($this->writeCacheHandler, $this->routes);
         $this->isMustWriteCache = false;
     }
 }

@@ -21,17 +21,20 @@ $router->mappings['test'] = array(
     )
 );
 
+define('ROUTES_CACHE', 'D:\cache\routes.dat');
+define('ROUTE_RESULT_CACHE', 'D:\cache\url_route_result.dat');
+
 $router->registerReadCacheHandler(function() {
-    if (is_file('D:\cache\routes.dat'))
-        return unserialize(file_get_contents('D:\cache\routes.dat'));
+    if (is_file(ROUTES_CACHE))
+        return unserialize(file_get_contents(ROUTES_CACHE));
 });
 $router->registerIsCacheExpiredHandler(function($timestamp) {
-    if (is_file('D:\cache\routes.dat'))
-        return filemtime('D:\cache\routes.dat') < $timestamp;
+    if (is_file(ROUTES_CACHE))
+        return filemtime(ROUTES_CACHE) < $timestamp;
 });
 $router->registerWriteCacheHandler(function($data) {
     $content = serialize($data);
-    $cache = 'D:\cache\routes.dat';
+    $cache = ROUTES_CACHE;
     $fp = fopen($cache, 'w+');
     fwrite($fp, $content);
     fclose($fp);

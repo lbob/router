@@ -94,6 +94,10 @@ class Router
      */
     private $routeCache;
 
+    private $filterBinders = array();
+
+    private $mappingFilterBinders = array();
+
     public function __construct()
     {
         if (isset($this->baseMappings) && !empty($this->baseMappings)) {
@@ -309,8 +313,10 @@ class Router
                 if (is_string($filter)) {
                     if (!array_key_exists($filter, $this->filters)) {
                         $path = $this->getFilterPath($filter);
-                        if (is_file($path) && is_readable($path))
+                        if (is_file($path) && is_readable($path)) {
+                            $router = $this;
                             require $path;
+                        }
                         if (!array_key_exists($filter, $this->filters)) {
                             throw new \InvalidArgumentException("Can't find filter [$filter] in route [" . $this->routeResult->mappingName . "]");
                         }
