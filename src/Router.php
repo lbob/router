@@ -73,6 +73,7 @@ class Router
      */
     private $routeCache;
     private $filterBinders = array();
+    private $missingHandler;
 
     public function __construct()
     {
@@ -92,6 +93,19 @@ class Router
             self::$instance = self::make($configDir, $filterDir);
         }
         return self::$instance;
+    }
+
+    public function missing($handler)
+    {
+        if (isset($handler) && is_callable($handler)) {
+            $this->missingHandler = $handler;
+        }
+    }
+
+    private function onMissing()
+    {
+        if (isset($this->missingHandler) && is_callable($this->missingHandler))
+            call_user_func($this->missingHandler);
     }
 
     public function compileRoutes()
@@ -194,6 +208,8 @@ class Router
             //afterHandlers
             $this->invokeHandlers($route->afterHandlers);
             if ($this->isAbort()) return;
+        } else {
+            $this->onMissing();
         }
     }
 
