@@ -4,20 +4,10 @@ require '../vendor/autoload.php';
 $router = \Nebula\Router::getInstance(__DIR__.'/../config/routes.php', __DIR__.'/../config/filter');
 
 $router->mappings['test'] = array(
-    'expression' => '/admin/uav/{controller}/{action}?/{test}?//////',
-    'pattern' => array(
-        'test' => '\d{4}'
-    ),
-    'handler' => array(
-        'before' => function($params) {
-            var_dump('before handler');
-        },
-        'matched' => function($params) {
-            var_dump('matched handler');
-        },
-        'after' => function($params) {
-            var_dump('after handler');
-        }
+    'expression' => '/admin/{controller}?/{action}?/{id}?',
+    'default' => array(
+        'controller' => 'home',
+        'action' => 'index'
     )
 );
 
@@ -58,6 +48,11 @@ var_dump($router->reverse('/post/edit', array(
 var_dump($router->reverseByRoute('test', array(
     'controller' => 'home',
     'action' => 'index',
+    'id' => 111,
+    'ee' => 'dd'
+)));
+
+var_dump($router->reverse('/admin/', array(
     'id' => 111,
     'ee' => 'dd'
 )));

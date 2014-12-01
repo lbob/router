@@ -79,17 +79,10 @@ class Router
 
     public function __construct()
     {
-        if (isset($this->baseMappings) && !empty($this->baseMappings)) {
-            foreach ($this->baseMappings as $key => $value) {
-                if (!array_key_exists($key, $this->mappings)) {
-                    $this->mappings[$key] = $value;
-                }
-            }
-        }
         $this->routeCache = new RouteCache();
     }
 
-    public static function getInstance($configDir, $filterDir)
+    public static function getInstance($configDir = null, $filterDir = null)
     {
         if (!isset(self::$instance)) {
             self::$instance = self::make($configDir, $filterDir);
@@ -250,6 +243,7 @@ class Router
     {
         $routeResult = $this->match($url);
         if ($routeResult->isMatched) {
+            var_dump($routeResult->mappingName);
             foreach ($routeResult->params as $key => $value) {
                 if (!array_key_exists($key, $params))
                     $params[$key] = $value;
@@ -302,6 +296,17 @@ class Router
         return $this->routes;
     }
 
+    private function loadBaseMappings()
+    {
+        if (isset($this->baseMappings) && !empty($this->baseMappings)) {
+            foreach ($this->baseMappings as $key => $value) {
+                if (!array_key_exists($key, $this->mappings)) {
+                    $this->mappings[$key] = $value;
+                }
+            }
+        }
+    }
+
     private function onMissing()
     {
         if (isset($this->missingHandler) && is_callable($this->missingHandler))
@@ -318,6 +323,7 @@ class Router
                 $router->timestamp = filemtime($configDir);
                 $router->source    = $configDir;
                 require $configDir;
+                $router->loadBaseMappings();
             }
         }
         if (isset($filterDir)) {
