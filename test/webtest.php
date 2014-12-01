@@ -40,8 +40,20 @@ $router->registerWriteCacheHandler(function($data) {
     fclose($fp);
 });
 
-$router->routing('/?idws=333&hea=erere');
+$router->routing('/home/?idws=333&hea=erere');
 
 //var_dump($router);
 
 var_dump($router->isMatched());
+
+var_dump($router->reverse('/post/edit', array(
+    'id' => 111,
+    'ee' => 'dd'
+)));
+
+var_dump($router->reverseByRoute('test', array(
+    'controller' => 'hehe',
+    'action' => 'hehe',
+    'id' => 111,
+    'ee' => 'dd'
+)));

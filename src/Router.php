@@ -17,19 +17,14 @@ class Router
 
     const PATTERN_TOKEN_LESS = '#\/(\{[^\{\}]+\}\?)#i';
     const PATTERN_TOKEN_NOT_LESS = '#\/(\{[^\{\}]+\})#i';
+    const PATTERN_TOKEN_COMPLETE = '#\{([^\{\}]+)\}\??#i';
 
     /**
      * @var array 映射表，用于对路由进行配置
      *
-     * 包括以下字段：
-     * expression
-     * pattern
-     * handler
-     * default
-     * filter
+     * 包括以下字段：expression, pattern, handler, default, filter
      */
     public $mappings = array();
-
     public $baseMappings
         = array(
             'default' => array(
@@ -45,18 +40,10 @@ class Router
      * @var array Nebula\Route 编译 mappings 之后得到的路由表
      *
      * 包括以下字段：
-     * expression: 原表达式解释成用于匹配URL的正则表达式
-     * patterns
-     * tokens: token集合
-     * beforeHandlers
-     * matchedHandlers
-     * afterHandlers
-     * defaultValues
-     * beforeFilters
-     * afterFilters
+     * expression: 原表达式解释成用于匹配URL的正则表达式, patterns, tokens: token集合, beforeHandlers,
+     * matchedHandlers, afterHandlers,defaultValues, beforeFilters, afterFilters
      */
     private $routes = array();
-
     private $defaultTokenPatterns
         = array(
             'controller' => self::PATTERN_BASE,
@@ -65,35 +52,26 @@ class Router
             'name'       => self::PATTERN_NAME,
             'tail'       => self::PATTERN_TAIL,
         );
-
     /**
      * @var \Nebula\RouteResult
      */
     public $routeResult;
-
     /**
      * @var array Nebula\Filter
      */
     private $filters = array();
-
     private $isAbort = false;
-
     /**
      * @var string
      */
     private $filterDir;
-
     private static $instance;
-
     private $timestamp = -1;
-
     private $source;
-
     /**
      * @var \Nebula\RouteCache
      */
     private $routeCache;
-
     private $filterBinders = array();
 
     public function __construct()
@@ -114,54 +92,6 @@ class Router
             self::$instance = self::make($configDir, $filterDir);
         }
         return self::$instance;
-    }
-
-    private static function make($configDir, $filterDir)
-    {
-        if (!isset($router)) {
-            $router = new Router();
-        }
-        if (isset($configDir)) {
-            if (is_file($configDir) && is_readable($configDir)) {
-                $router->timestamp = filemtime($configDir);
-                $router->source    = $configDir;
-                require $configDir;
-            }
-        }
-        if (isset($filterDir)) {
-            $router->filterDir = $filterDir;
-        }
-        return $router;
-    }
-
-    private function getBaseRouteData($mappingName, $mapping)
-    {
-        if (!$this->routeCache->isCacheExpired($this->timestamp)) {
-            $data = $this->routeCache->getData($mappingName);
-            if (isset($data)) return $data;
-        }
-
-        if (array_key_exists('expression', $mapping)) {
-            $expression = $mapping['expression'];
-            $tokens     = $this->getTokens($expression);
-            $patterns   = $this->getTokenPatterns($mappingName, $tokens);
-
-            //namespace
-            $namespace = null;
-            if (preg_match(self::PATTERN_NAMESPACE, $expression, $matches)) {
-                if (!empty($matches[1])) $namespace = $matches[1];
-            }
-
-            $result = array(
-                $this->parseExpression($expression, $tokens, $patterns),
-                $patterns,
-                $tokens,
-                $namespace
-            );
-            $this->routeCache->setData($mappingName, $result);
-            return $result;
-        }
-        return null;
     }
 
     public function compileRoutes()
@@ -284,6 +214,110 @@ class Router
         $this->filterBinders[] = new FilterBinder(func_get_args());
     }
 
+    public function reverse($url, $params)
+    {
+        $routeResult = $this->match($url);
+        if ($routeResult->isMatched) {
+            foreach ($routeResult->params as $key => $value) {
+                if (!array_key_exists($key, $params))
+                    $params[$key] = $value;
+            }
+            return $this->reverseByRoute($routeResult->mappingName, $params);
+        }
+        return '/'; //无匹配的则返回到根目录
+    }
+
+    public function reverseByRoute($routeName, $params)
+    {
+        /**
+         * @var $route \Nebula\Route
+         */
+        $route      = $this->routes[$routeName];
+        $expression = $this->mappings[$routeName]['expression'];
+        $replaced   = array();
+        if (preg_match_all(self::PATTERN_TOKEN_COMPLETE, $expression, $matches, PREG_SET_ORDER)) {
+            foreach ($matches as $item) {
+                $matchedString = $item[0];
+                $matchedToken  = $item[1];
+                if (array_key_exists($matchedToken, $params))
+                    $expression = str_replace($matchedString, $params[$matchedToken], $expression);
+                else {
+                    if (strpos($matchedString, '?') > 0) {
+                        $expression = str_replace($matchedString, '', $expression);
+                    } else {
+                        throw new \InvalidArgumentException("Reverse fail: Can't find [$matchedToken] in [$expression] (Matched route name is [$route->mappingName])");
+                    }
+                }
+                $replaced[$matchedToken] = $matchedToken;
+            }
+            $expression = str_replace('//', '/', $expression);
+        }
+        if (array_key_exists('namespace', $params))
+            unset($params['namespace']);
+        $tails = array();
+        foreach ($params as $key => $value) {
+            if (!array_key_exists($key, $replaced)) {
+                $tails[] = $key . '=' . $value;
+            }
+        }
+        if (isset($tails) && !empty($tails))
+            $expression = $expression . '?' . implode('&', $tails);
+        return $expression;
+    }
+
+    public function getRoutes()
+    {
+        return $this->routes;
+    }
+
+    private static function make($configDir, $filterDir)
+    {
+        if (!isset($router)) {
+            $router = new Router();
+        }
+        if (isset($configDir)) {
+            if (is_file($configDir) && is_readable($configDir)) {
+                $router->timestamp = filemtime($configDir);
+                $router->source    = $configDir;
+                require $configDir;
+            }
+        }
+        if (isset($filterDir)) {
+            $router->filterDir = $filterDir;
+        }
+        return $router;
+    }
+
+    private function getBaseRouteData($mappingName, $mapping)
+    {
+        if (!$this->routeCache->isCacheExpired($this->timestamp)) {
+            $data = $this->routeCache->getData($mappingName);
+            if (isset($data)) return $data;
+        }
+
+        if (array_key_exists('expression', $mapping)) {
+            $expression = $mapping['expression'];
+            $tokens     = $this->getTokens($expression);
+            $patterns   = $this->getTokenPatterns($mappingName, $tokens);
+
+            //namespace
+            $namespace = null;
+            if (preg_match(self::PATTERN_NAMESPACE, $expression, $matches)) {
+                if (!empty($matches[1])) $namespace = $matches[1];
+            }
+
+            $result = array(
+                $this->parseExpression($expression, $tokens, $patterns),
+                $patterns,
+                $tokens,
+                $namespace
+            );
+            $this->routeCache->setData($mappingName, $result);
+            return $result;
+        }
+        return null;
+    }
+
     private function matchFilter()
     {
         $handlers = array();
@@ -319,11 +353,6 @@ class Router
                 $afterFilters = $value;
         }
         return array($beforeFilters, $afterFilters);
-    }
-
-    public function getRoutes()
-    {
-        return $this->routes;
     }
 
     private function getFilterPath($filter)

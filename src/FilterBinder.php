@@ -23,12 +23,13 @@ class FilterBinder {
         $args = func_get_arg(0);
         if (count($args) > 0) {
             if (is_array($args[0])) {
-                $this->expression = '';
+                $this->expression = '^';
                 foreach ($args[0] as $key => $value) {
                     if ($value === '*')
                         $value = '[^\]]*';
-                    $this->expression = $this->expression . '^\[' . $key . '\=' . $value . '\]';
+                    $this->expression = $this->expression . '\[' . $key . '\=' . $value . '\]';
                 }
+                $this->expression = '#'.$this->expression.'#i';
             }
             if (is_string($args[0])) {
                 $this->mappingName = $args[0];

@@ -191,6 +191,24 @@ class RoutesTest extends PHPUnit_Framework_TestCase
         });
         $this->router->routing('/admin/uav/post/edit/1442');
     }
+
+    public function testReverse()
+    {
+        $url = $this->router->reverse('/post/edit', array(
+            'id' => 111,
+            'ee' => 'dd'
+        ));
+        $this->assertEquals('/post/edit/111?ee=dd', $url);
+    }
+
+    public function testReverseByRoute()
+    {
+        $url = $this->router->reverseByRoute('test', array(
+            'id' => 111,
+            'ee' => 'dd'
+        ));
+        $this->assertEquals('/post/edit/111?ee=dd', $url);
+    }
 }
 
  
