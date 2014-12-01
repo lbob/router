@@ -40,7 +40,7 @@ $router->registerWriteCacheHandler(function($data) {
     fclose($fp);
 });
 
-$router->routing('/home/?idws=333&hea=erere');
+$router->routing('/admin/uav/home/?idws=333&hea=erere');
 
 //var_dump($router);
 
@@ -52,8 +52,8 @@ var_dump($router->reverse('/post/edit', array(
 )));
 
 var_dump($router->reverseByRoute('test', array(
-    'controller' => 'hehe',
-    'action' => 'hehe',
+    'controller' => 'home',
+    'action' => 'index',
     'id' => 111,
     'ee' => 'dd'
 )));

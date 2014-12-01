@@ -74,6 +74,8 @@ class Router
     private $routeCache;
     private $filterBinders = array();
     private $missingHandler;
+    private $defaultMatchedHandlers = array();
+    private $mustRunMatchedHandlers = array();
 
     public function __construct()
     {
@@ -100,12 +102,6 @@ class Router
         if (isset($handler) && is_callable($handler)) {
             $this->missingHandler = $handler;
         }
-    }
-
-    private function onMissing()
-    {
-        if (isset($this->missingHandler) && is_callable($this->missingHandler))
-            call_user_func($this->missingHandler);
     }
 
     public function compileRoutes()
@@ -171,6 +167,18 @@ class Router
         $this->routeCache->registerWriteCacheHandler($handler);
     }
 
+    public function registerDefaultMatchedHandler($handler)
+    {
+        if (isset($handler) && is_callable($handler))
+            $this->defaultMatchedHandlers[] = $handler;
+    }
+
+    public function registerMustRunMatchedHandler($handler)
+    {
+        if (isset($handler) && is_callable($handler))
+            $this->mustRunMatchedHandlers[] = $handler;
+    }
+
     public function routing()
     {
         if (func_num_args() > 0)
@@ -198,7 +206,12 @@ class Router
             if ($this->isAbort()) return;
 
             //matchedHandlers
-            $this->invokeHandlers($route->matchedHandlers);
+            if (isset($route->matchedHandlers) && !empty($route->matchedHandlers))
+                $this->invokeHandlers($route->matchedHandlers);
+            else if (isset($this->defaultMatchedHandlers) && !empty($this->defaultMatchedHandlers))
+                $this->invokeHandlers($this->defaultMatchedHandlers);
+            if (isset($this->mustRunMatchedHandlers) && !empty($this->mustRunMatchedHandlers))
+                $this->invokeHandlers($this->mustRunMatchedHandlers);
             if ($this->isAbort()) return;
 
             //afterFilters
@@ -284,6 +297,12 @@ class Router
     public function getRoutes()
     {
         return $this->routes;
+    }
+
+    private function onMissing()
+    {
+        if (isset($this->missingHandler) && is_callable($this->missingHandler))
+            call_user_func($this->missingHandler);
     }
 
     private static function make($configDir, $filterDir)
