@@ -15,12 +15,12 @@ class Route {
     public $expression;
     public $patterns;
     public $tokens;
-    public $beforeHandlers;
-    public $matchedHandlers;
-    public $afterHandlers;
-    public $defaultValues;
-    public $beforeFilters;
-    public $afterFilters;
+    public $beforeHandlers = array();
+    public $matchedHandlers = array();
+    public $afterHandlers = array();
+    public $defaultValues = array();
+    public $beforeFilters = array();
+    public $afterFilters = array();
 }
 
  

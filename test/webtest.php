@@ -40,7 +40,7 @@ $router->registerWriteCacheHandler(function($data) {
     fclose($fp);
 });
 
-$router->routing('/admin/uav/post/edit/1442');
+$router->routing('/?idws=333&hea=erere');
 
 //var_dump($router);
 

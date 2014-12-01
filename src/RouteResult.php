@@ -28,12 +28,20 @@ class RouteResult
      */
     public $isMatched;
 
-    public function __construct($url, $mappingName, $isMatched, $params)
+    public function __construct($url, $mappingName, $isMatched, $params, $defaultValues)
     {
         $this->url         = $url;
         $this->mappingName = $mappingName;
         $this->isMatched   = $isMatched;
-        $this->params      = $params;
+
+        if (isset($defaultValues)) {
+            foreach ($params as $key => $value) {
+                if (!isset($value) && array_key_exists($key, $defaultValues))
+                    $params[$key] = $defaultValues[$key];
+            }
+        }
+
+        $this->params = array_filter($params, function($var) {return isset($var);});
     }
 }
 

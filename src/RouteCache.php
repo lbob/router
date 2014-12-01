@@ -67,7 +67,7 @@ class RouteCache {
     public function readCache()
     {
         if (isset($this->readCacheHandler) && is_callable($this->readCacheHandler))
-            $this->data = call_user_func($this->readCacheHandler);
+            $this->routes = call_user_func($this->readCacheHandler);
     }
 
     public function writeCache()

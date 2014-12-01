@@ -74,7 +74,7 @@ class Router
     /**
      * @var array Nebula\Filter
      */
-    private $filters;
+    private $filters = array();
 
     private $isAbort = false;
 
@@ -95,8 +95,6 @@ class Router
     private $routeCache;
 
     private $filterBinders = array();
-
-    private $mappingFilterBinders = array();
 
     public function __construct()
     {
@@ -239,10 +237,13 @@ class Router
         $this->compileRoutes();
         $this->routeResult = $this->match($url);
         if ($this->routeResult->isMatched === true) {
+            list($beforeFilters, $afterFilters) = $this->matchFilter();
             /**
              * @var $route \Nebula\Route
              */
             $route = $this->routes[$this->routeResult->mappingName];
+            array_push($route->beforeFilters, $beforeFilters);
+            array_push($route->afterFilters, $afterFilters);
 
             //beforeFilters
             $this->invokeFilters($route->beforeFilters);
@@ -278,6 +279,48 @@ class Router
         }
     }
 
+    public function bindFilter()
+    {
+        $this->filterBinders[] = new FilterBinder(func_get_args());
+    }
+
+    private function matchFilter()
+    {
+        $handlers = array();
+        if (isset($this->routeResult) && $this->isMatched()) {
+            //构造匹配
+            $expression = '';
+            foreach ($this->routeResult->params as $key => $value) {
+                $expression = $expression . '[' . $key . '=' . $value . ']';
+            }
+            /**
+             * @var $filterBinder \Nebula\FilterBinder
+             */
+            foreach ($this->filterBinders as $filterBinder) {
+                //优先匹配
+                if (isset($filterBinder->expression)) {
+                    if (preg_match($filterBinder->expression, $expression, $matches)) {
+                        //匹配成功
+                        $handlers = $filterBinder->handlers;
+                        break;
+                    }
+                }
+                if ($this->routeResult->mappingName === $filterBinder->mappingName) {
+                    $handlers = $filterBinder->handlers;
+                }
+            }
+        }
+        $beforeFilters = array();
+        $afterFilters = array();
+        foreach ($handlers as $key => $value) {
+            if ($key === 'before')
+                $beforeFilters = $value;
+            if ($key === 'after')
+                $afterFilters = $value;
+        }
+        return array($beforeFilters, $afterFilters);
+    }
+
     public function getRoutes()
     {
         return $this->routes;
@@ -310,18 +353,22 @@ class Router
                 if (is_callable($filter)) {
                     $handlers[] = $filter;
                 }
-                if (is_string($filter)) {
-                    if (!array_key_exists($filter, $this->filters)) {
-                        $path = $this->getFilterPath($filter);
-                        if (is_file($path) && is_readable($path)) {
-                            $router = $this;
-                            require $path;
+                if (is_array($filter)) {
+                    foreach ($filter as $filterName) {
+                        if (is_string($filterName)) {
+                            if (!array_key_exists($filterName, $this->filters)) {
+                                $path = $this->getFilterPath($filterName);
+                                if (is_file($path) && is_readable($path)) {
+                                    $router = $this;
+                                    require $path;
+                                }
+                            }
+                            if (!array_key_exists($filterName, $this->filters)) {
+                                throw new \InvalidArgumentException("Can't find filter [$filterName] in route [" . $this->routeResult->mappingName . "]");
+                            } else {
+                                $handlers = array($this->filters[$filterName]->handlers);
+                            }
                         }
-                        if (!array_key_exists($filter, $this->filters)) {
-                            throw new \InvalidArgumentException("Can't find filter [$filter] in route [" . $this->routeResult->mappingName . "]");
-                        }
-                    } else {
-                        $handlers = $this->filters[$filter]->handlers;
                     }
                 }
                 $this->invokeHandlers($handlers);
@@ -345,8 +392,14 @@ class Router
                     foreach ($route->tokens as $token) {
                         if (!empty($match[$token]))
                             $params[$token] = $match[$token];
+                        else
+                            $params[$token] = null;
                     }
-                    return new RouteResult($url, $route->mappingName, true, $params);
+                    if (!empty($match['tail'])) {
+                        parse_str($match['tail'], $others);
+                        $params += $others;
+                    }
+                    return new RouteResult($url, $route->mappingName, true, $params, $route->defaultValues);
                 }
             }
         }
