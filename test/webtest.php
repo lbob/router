@@ -39,6 +39,10 @@ $router->registerWriteCacheHandler(function($data) {
     fwrite($fp, $content);
     fclose($fp);
 });
+$router->registerMatchedHandler(function($params) {
+    var_dump($params);
+    var_dump('must run');
+});
 
 $router->routing('/admin/uav/home/?idws=333&hea=erere');
 

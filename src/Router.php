@@ -75,7 +75,7 @@ class Router
     private $filterBinders = array();
     private $missingHandler;
     private $defaultMatchedHandlers = array();
-    private $mustRunMatchedHandlers = array();
+    private $matchedHandlers = array();
 
     public function __construct()
     {
@@ -173,10 +173,10 @@ class Router
             $this->defaultMatchedHandlers[] = $handler;
     }
 
-    public function registerMustRunMatchedHandler($handler)
+    public function registerMatchedHandler($handler)
     {
         if (isset($handler) && is_callable($handler))
-            $this->mustRunMatchedHandlers[] = $handler;
+            $this->matchedHandlers[] = $handler;
     }
 
     public function routing()
@@ -197,6 +197,11 @@ class Router
             array_push($route->beforeFilters, $beforeFilters);
             array_push($route->afterFilters, $afterFilters);
 
+            //matchedHandlers
+            if (isset($this->matchedHandlers) && !empty($this->matchedHandlers))
+                $this->invokeHandlers($this->matchedHandlers);
+            if ($this->isAbort()) return;
+
             //beforeFilters
             $this->invokeFilters($route->beforeFilters);
             if ($this->isAbort()) return;
@@ -210,8 +215,6 @@ class Router
                 $this->invokeHandlers($route->matchedHandlers);
             else if (isset($this->defaultMatchedHandlers) && !empty($this->defaultMatchedHandlers))
                 $this->invokeHandlers($this->defaultMatchedHandlers);
-            if (isset($this->mustRunMatchedHandlers) && !empty($this->mustRunMatchedHandlers))
-                $this->invokeHandlers($this->mustRunMatchedHandlers);
             if ($this->isAbort()) return;
 
             //afterFilters
