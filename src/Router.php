@@ -243,7 +243,6 @@ class Router
     {
         $routeResult = $this->match($url);
         if ($routeResult->isMatched) {
-            var_dump($routeResult->mappingName);
             foreach ($routeResult->params as $key => $value) {
                 if (!array_key_exists($key, $params))
                     $params[$key] = $value;
