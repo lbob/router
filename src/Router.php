@@ -89,7 +89,7 @@ class Router
         $this->routeCache = new RouteCache();
     }
 
-    public static function getInstance($configDir, $filterDir)
+    public static function getInstance($configDir = null, $filterDir = null)
     {
         if (!isset(self::$instance)) {
             self::$instance = self::make($configDir, $filterDir);
