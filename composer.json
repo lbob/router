@@ -17,7 +17,7 @@
 	},
 	"autoload": {
 		"psr-4": {
-			"Nebula\\": "src/Routes.php"
+			"Nebula\\": "src/Router.php"
 		},
 		"classmap": [
 			"src"
