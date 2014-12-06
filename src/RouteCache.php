@@ -11,17 +11,12 @@ namespace Nebula;
  */
 class RouteCache {
     public $routes = array();
-
     public $expired = true;
 
     private $isExpiredHandler;
-
     private $readCacheHandler;
-
     private $writeCacheHandler;
-
     private $isMustWriteCache = false;
-
     private $stat = array();
 
     public function registerIsExpiredHandler($handler)
