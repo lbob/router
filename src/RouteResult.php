@@ -26,7 +26,7 @@ class RouteResult
     /**
      * @var boolean
      */
-    public $isMatched;
+    public $isMatched = false;
 
     public function __construct($url, $mappingName, $isMatched, $params, $defaultValues)
     {
