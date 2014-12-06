@@ -181,7 +181,7 @@ class Router
 
         $this->compileRoutes();
         $this->routeResult = $this->match($url);
-        if ($this->routeResult->isMatched === true) {
+        if ($this->isMatched() === true) {
             list($beforeFilters, $afterFilters) = $this->matchFilter();
             /**
              * @var $route \Nebula\Route
@@ -224,7 +224,9 @@ class Router
 
     public function isMatched()
     {
-        return $this->routeResult->isMatched;
+        if (isset($this->routeResult))
+            return $this->routeResult->isMatched;
+        return false;
     }
 
     public function registerFilter($name, $handler)
