@@ -247,6 +247,8 @@ class Router
 
     public function reverse($url, $params)
     {
+        if (!isset($params))
+            $params = array();
         $routeResult = $this->match($url);
         if (isset($routeResult) && $routeResult->isMatched) {
             foreach ($routeResult->params as $key => $value) {
