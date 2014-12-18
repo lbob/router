@@ -149,7 +149,7 @@ class Router
         $this->routeCache->writeCache();
     }
 
-    public function registerIsCacheExpiredHandler($handler)
+    public function registerIsCacheExpiredHandler(callable $handler)
     {
         $this->routeCache->registerIsExpiredHandler($handler);
     }
