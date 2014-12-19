@@ -1,7 +1,6 @@
 <?php
 
 namespace Nebula;
-use Prophecy\Exception\InvalidArgumentException;
 
 
 /**
