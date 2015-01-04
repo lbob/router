@@ -80,10 +80,6 @@ class Router
     public function __construct()
     {
         $this->routeCache = new RouteCache();
-
-        foreach ($this->baseMappings as $key => $value) {
-            $this->mappings[$key] = $value;
-        }
     }
 
     public static function getInstance($configDir = null, $filterDir = null)
