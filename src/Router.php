@@ -354,7 +354,7 @@ class Router
             }
 
             $result = array(
-                $this->parseExpression($expression, $tokens, $patterns),
+                $this->parseExpression($expression, $tokens, $patterns, $namespace),
                 $patterns,
                 $tokens,
                 $namespace
@@ -482,13 +482,18 @@ class Router
         return null;
     }
 
-    private function parseExpression($expression, $tokens, $patterns)
+    private function parseExpression($expression, $tokens, $patterns, $namespace)
     {
         $expression = preg_replace('#(/+)$#i', '', $expression);
         $expression = preg_replace(self::PATTERN_TOKEN_LESS, '\/?$1', $expression);
         $expression = preg_replace(self::PATTERN_TOKEN_NOT_LESS, '\/$1', $expression);
         foreach ($tokens as $token) {
             $expression = str_replace('{' . $token . '}', '(?<' . $token . '>' . $patterns[$token] . ')', $expression);
+        }
+        if (isset($namespace)) {
+            $namespacePattern = '#^/' . $namespace . '#i';
+            $replaceNamespace = '\/?' . $namespace;
+            $expression = preg_replace($namespacePattern, $replaceNamespace, $expression);
         }
         return '#^' . $expression . '\/?(?:\?(?<tail>' . self::PATTERN_TAIL . '))?$#i';
     }

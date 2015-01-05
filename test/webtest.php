@@ -19,6 +19,7 @@ $router->registerReadCacheHandler(function() {
         return unserialize(file_get_contents(ROUTES_CACHE));
 });
 $router->registerIsCacheExpiredHandler(function($timestamp) {
+    return true;
     if (is_file(ROUTES_CACHE))
         return filemtime(ROUTES_CACHE) < $timestamp;
 });
@@ -52,7 +53,9 @@ var_dump($router->reverseByRoute('test', array(
     'ee' => 'dd'
 )));
 
-var_dump($router->reverse('/admin/', array(
+var_dump($router->reverse('admin/home/index', array(
     'id' => 111,
     'ee' => 'dd'
 )));
+
+var_dump($router);
