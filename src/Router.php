@@ -326,12 +326,12 @@ class Router
                 $router->timestamp = filemtime($configDir);
                 $router->source    = $configDir;
                 require $configDir;
-                $router->loadBaseMappings();
             }
         }
         if (isset($filterDir)) {
             $router->filterDir = $filterDir;
         }
+        $router->loadBaseMappings();
         return $router;
     }
 
