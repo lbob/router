@@ -90,7 +90,7 @@ class Router
         return self::$instance;
     }
 
-    public function missing(callable $handler)
+    public function missing($handler)
     {
         if (isset($handler) && is_callable($handler)) {
             $this->missingHandler = $handler;
@@ -145,28 +145,28 @@ class Router
         $this->routeCache->writeCache();
     }
 
-    public function registerIsCacheExpiredHandler(callable $handler)
+    public function registerIsCacheExpiredHandler($handler)
     {
         $this->routeCache->registerIsExpiredHandler($handler);
     }
 
-    public function registerReadCacheHandler(callable $handler)
+    public function registerReadCacheHandler($handler)
     {
         $this->routeCache->registerReadCacheHandler($handler);
     }
 
-    public function registerWriteCacheHandler(callable $handler)
+    public function registerWriteCacheHandler($handler)
     {
         $this->routeCache->registerWriteCacheHandler($handler);
     }
 
-    public function registerDefaultMatchedHandler(callable $handler)
+    public function registerDefaultMatchedHandler($handler)
     {
         if (isset($handler) && is_callable($handler))
             $this->defaultMatchedHandlers[] = $handler;
     }
 
-    public function registerMatchedHandler(callable $handler)
+    public function registerMatchedHandler($handler)
     {
         if (isset($handler) && is_callable($handler))
             $this->matchedHandlers[] = $handler;
