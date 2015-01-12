@@ -473,7 +473,11 @@ class Router
                     }
                     if (!empty($match['tail'])) {
                         parse_str($match['tail'], $others);
-                        $params += $others;
+                        if (isset($others)) {
+                            foreach ($others as $key => $value) {
+                                $params[$key] = $value;
+                            }
+                        }
                     }
                     return new RouteResult($url, $route->mappingName, true, $params, $route->defaultValues);
                 }

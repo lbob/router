@@ -35,27 +35,30 @@ $router->registerMatchedHandler(function($params) {
     var_dump('must run');
 });
 
-$router->routing('/admin/uav/home/?idws=333&hea=erere');
-
+//$router->routing('/admin/uav/home/?idws=333&hea=erere');
+//
+////var_dump($router);
+//
+//var_dump($router->isMatched());
+//
+//var_dump($router->reverse('/post/edit', array(
+//    'id' => 111,
+//    'ee' => 'dd'
+//)));
+//
+//var_dump($router->reverseByRoute('test', array(
+//    'controller' => 'home',
+//    'action' => 'index',
+//    'id' => 111,
+//    'ee' => 'dd'
+//)));
+//
+//var_dump($router->reverse('admin/home/index', array(
+//    'id' => 111,
+//    'ee' => 'dd'
+//)));
+//
 //var_dump($router);
 
-var_dump($router->isMatched());
-
-var_dump($router->reverse('/post/edit', array(
-    'id' => 111,
-    'ee' => 'dd'
-)));
-
-var_dump($router->reverseByRoute('test', array(
-    'controller' => 'home',
-    'action' => 'index',
-    'id' => 111,
-    'ee' => 'dd'
-)));
-
-var_dump($router->reverse('admin/home/index', array(
-    'id' => 111,
-    'ee' => 'dd'
-)));
-
+$router->routing('/account/setpassword/?id=4&password=123');
 var_dump($router);
