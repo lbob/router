@@ -453,7 +453,7 @@ class Router
         }
     }
 
-    private function match($url)
+    public function match($url)
     {
         if (isset($url)) {
             $params = array();
