@@ -3,14 +3,6 @@
 require '../vendor/autoload.php';
 $router = \Nebula\Router::getInstance(__DIR__.'/../config/routes.php', __DIR__.'/../config/filter');
 
-$router->mappings['test'] = array(
-    'expression' => '/admin/{controller}?/{action}?/{id}?',
-    'default' => array(
-        'controller' => 'home',
-        'action' => 'index'
-    )
-);
-
 define('ROUTES_CACHE', 'D:\cache\routes.dat');
 define('ROUTE_RESULT_CACHE', 'D:\cache\url_route_result.dat');
 
@@ -60,5 +52,8 @@ $router->registerMatchedHandler(function($params) {
 //
 //var_dump($router);
 
-$router->routing('/account/setpassword/?id=4&password=123');
-var_dump($router);
+//$router->routing('/account/setpassword/?id=4&password=123');
+$router->routing('/test2');
+//var_dump($router);
+var_dump($router->isMatched());
+var_dump($router->routeResult->mappingName);

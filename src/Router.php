@@ -128,6 +128,12 @@ class Router
             //defaultValues
             if (array_key_exists('default', $mapping)) {
                 $route->defaultValues = $mapping['default'];
+            } else {
+                //为每个匹配的路由添加默认的default配置
+                $route->defaultValues = array(
+                    'controller' => 'home',
+                    'action' => 'index'
+                );
             }
 
             //beforeFilters, afterFilters
@@ -301,6 +307,7 @@ class Router
 
     private function loadBaseMappings()
     {
+        var_dump($this->mappings);
         if (isset($this->baseMappings) && !empty($this->baseMappings)) {
             foreach ($this->baseMappings as $key => $value) {
                 if (!array_key_exists($key, $this->mappings)) {
@@ -308,6 +315,7 @@ class Router
                 }
             }
         }
+        var_dump($this->mappings);
     }
 
     private function onMissing()
