@@ -307,7 +307,6 @@ class Router
 
     private function loadBaseMappings()
     {
-        var_dump($this->mappings);
         if (isset($this->baseMappings) && !empty($this->baseMappings)) {
             foreach ($this->baseMappings as $key => $value) {
                 if (!array_key_exists($key, $this->mappings)) {
@@ -315,7 +314,6 @@ class Router
                 }
             }
         }
-        var_dump($this->mappings);
     }
 
     private function onMissing()
